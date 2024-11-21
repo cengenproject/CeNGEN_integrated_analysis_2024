@@ -16,7 +16,7 @@ GPCR_pseudogenes <- read.table('references/GPCR_pseudogene_table.csv', sep = ','
 
 #### load modality metadata ----
 
-modality <- read.table('references/Hammarlund_Kaitlyn_Alec_neuron_annotation_070921.csv', sep = ',', header = T)
+modality <- read.table('references/Neuron_annotation_070921.csv', sep = ',', header = T)
 
 #### load data ----
 

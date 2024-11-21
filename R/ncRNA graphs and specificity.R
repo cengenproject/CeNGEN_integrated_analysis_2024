@@ -101,28 +101,6 @@ dim(aggr_nc_raw_GeTMM)
 aggr_nc_raw_GeTMM <- aggr_nc_raw_GeTMM[!rownames(aggr_nc_raw_GeTMM) %in% ws289_possible_artifacts$gene_id,]
 
 
-#### load in neuron annotation metadata ----
-
-# neuron_meta.df <- read.table('~/Bioinformatics/Neuron_metadata_hammarlund.tsv', sep = '\t',
-#                              header = T, row.names = 1)
-# neuron_meta.df$Modality_collapsed <- ' '
-# neuron_meta.df$Modality_collapsed[neuron_meta.df$Modality..Interneuron==1] = 'Interneuron'
-# neuron_meta.df$Modality_collapsed[neuron_meta.df$Modality..Unknown==1] = 'Unknown'
-# neuron_meta.df$Modality_collapsed[neuron_meta.df$Modality..Sensory==1] = 'Sensory'
-# neuron_meta.df$Modality_collapsed[neuron_meta.df$Modality..Motor==1] = 'Motor'
-# 
-# 
-# neuron_meta.df
-# neuron_meta.df$Polymodal <- 'non'
-# neuron_meta.df$Polymodal[
-#   rowSums(neuron_meta.df[,c("Modality..Sensory", "Modality..Motor", "Modality..Interneuron", "Modality..Unknown")]) > 1] <- 'Polymodal'
-# 
-# 
-# neuron_meta_cut.df <- neuron_meta.df[colnames(aggr_nc_raw_GeTMM),]
-# 
-# rownames(neuron_meta_cut.df[neuron_meta_cut.df$Neurotransmitter..acetylcholine==1,])
-
-
 ### calculate PEM scores, genes x cell types
 
 GeTMM_PEM <- fPem(aggr_nc_raw_GeTMM)
@@ -476,31 +454,6 @@ col_fun = colorRamp2(c(0, 3), c("#DEDCDC", "#Bb361d"))
 
 col_fun2 = colorRamp2(c(0, 5), c("#DEDCDC", "#Bb361d"))
 
-#Heatmap(log10(1+pan_ncRNAs), show_row_names = F, name = ' ',
-#        col = col_fun2, show_row_dend = F, show_column_dend = F, column_order = column_order(hs_ncRNA_hmap))
-
-
-
-
-
-ann <- data.frame(neuron_meta_cut.df$Modality_collapsed, neuron_meta_cut.df$Polymodal)
-colnames(ann) <- c('Modality', 'Polymodal')
-colAnn <- HeatmapAnnotation(df = ann,
-                            which = 'col',
-                            col = list(Modality = c(Interneuron = '#237400',
-                                                    Motor = '#D8AE00',
-                                                    Sensory = '#EE8366',
-                                                    Unknown = '#FCCCD8'),
-                                       Polymodal = c(non = 'grey',
-                                                     Polymodal = 'blue')),
-                            annotation_width = unit(c(1, 4), 'cm'),
-                            gap = unit(1, 'mm'))
-
-dim(highly_specific_ncRNAS)
-
-unique(highly_specific_ncRNAS_tidy$biotype)
-
-
 tmp.df <- t(scale(t(log10(1+highly_specific_ncRNAS))))
 row_dend = dendsort(hclust(dist(tmp.df)))
 col_fun = colorRamp2(c(0, 3), c("#DEDCDC", "#920000"))
@@ -510,20 +463,11 @@ dim(highly_specific_ncRNAS)
 ws289[rownames(highly_specific_ncRNAS), 'biotype'] %>% clipr::write_clip()
 
 
-highly_specific_ncRNAS[order(highly_specific_ncRNAS$ADL, decreasing = T),]
-
+## subset to highly specific genes in reference
 
 highly_specific_ncRNAS_ncRNA_genes <- highly_specific_ncRNAS[rownames(highly_specific_ncRNAS) %in% ws289_allnc[ws289_allnc$biotype=='ncRNA_gene', 'gene_id'], ]
 
 highly_specific_ncRNAS_ncRNA_genes[order(highly_specific_ncRNAS_ncRNA_genes$ADL, decreasing = T),]
-
-
-highly_specific_ncRNAS
-
-
-View(highly_specific_ncRNAS)
-
-sapply(colnames(highly_specific_ncRNAS), function(x){ highly_specific_ncRNAS[,x] |> sort(decreasing = T) |> head()})
 
 
 ### plot the highly specific genes ----

@@ -17,7 +17,7 @@ library(wbData)
 
 
 
-neuron_metadata <- read.csv('references/Hammarlund_Kaitlyn_Alec_neuron_annotation_070921.csv')
+neuron_metadata <- read.csv('references/Neuron_annotation_070921.csv')
 
 colnames(neuron_metadata) <- gsub('\\.\\.', '_', colnames(neuron_metadata))
 colnames(neuron_metadata) <- gsub('\\.', '_', colnames(neuron_metadata))

@@ -46,10 +46,10 @@ testing_matrix <-  read.table('references/ubiquitous_nonNeuronal_testing_matrix.
 
 
 
-bulk_raw_TMM <- read.table('Data/bsn12_bulk_TMM_051624.tsv', sep = '\t')
-bulk_subtracted_TMM <- read.table('Data/bsn12_bulk_subtracted_TMM_051624.tsv', sep = '\t')
-bmind_neuron_count_TMM <- read.table('Data/bsn12_bulk_bMIND_TMM_051624.tsv', sep = '\t')
-egm_TMM <- read.table('Data/bsn12_bulk_enigma_TMM_051624.tsv', sep = '\t')
+bulk_raw_TMM <- read.table('Data/bsn12_bulk_TMM_051624.tsv.gz', sep = '\t')
+bulk_subtracted_TMM <- read.table('Data/bsn12_bulk_subtracted_TMM_051624.tsv.gz', sep = '\t')
+bmind_neuron_count_TMM <- read.table('Data/bsn12_bulk_bMIND_TMM_051624.tsv.gz', sep = '\t')
+egm_TMM <- read.table('Data/bsn12_bulk_enigma_TMM_051624.tsv.gz', sep = '\t')
 
 
 aggr_raw_TMM <- bulk_raw_TMM

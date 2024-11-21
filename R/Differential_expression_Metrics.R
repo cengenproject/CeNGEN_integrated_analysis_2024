@@ -1,4 +1,4 @@
-### check qlf output
+### check qlf output -- expected to run after "single_cell_differential_expression.R"
 
 library(dplyr)
 library(wbData)
@@ -89,8 +89,8 @@ get_gt_statistics <- function(qlf_table, gt_df,
 gt <- read.table('references/bulk_all_ground_truth_121023.csv', sep = ',')
 gt$VD_DD <- gt$VD
 
-sc_counts_qlf_list <- readRDS('data_out/sc_counts_qlf_tables.rds')
-sc_p2c_qlf_list <- readRDS('data_out/sc_prop_qlf_tables.rds')
+sc_counts_qlf_list <- readRDS('Data_out/sc_counts_qlf_tables.rds')
+sc_p2c_qlf_list <- readRDS('Data_out/sc_prop_qlf_tables.rds')
 
 ### compare one 
 

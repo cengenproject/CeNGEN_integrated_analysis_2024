@@ -9,7 +9,7 @@ library(pbapply)
 #### load in bulk data
 
 
-bulk_data <- read.table('Data/Bulk_data_bsn12_231211.tsv')
+bulk_data <- read.table('Data/Bulk_data_bsn12_231211.tsv.gz')
 
 bulk_cells <- str_split_fixed(colnames(bulk_data), 'r', 2)[,1] |> unique()
 
@@ -61,7 +61,7 @@ colnames(design_no_int) <- levels(edgeR_counts$samples$group)
 edgeR_counts <- estimateDisp(edgeR_counts, design_no_int)
 fit <- glmQLFit(edgeR_counts, design_no_int, robust=TRUE)
 
-saveRDS(fit, 'data_out/single_cell_counts_edgeR_fit.rds')
+saveRDS(fit, 'Data_out/single_cell_counts_edgeR_fit.rds')
 
 fit <- readRDS('single_cell_counts_edgeR_fit.rds')
 
@@ -98,7 +98,7 @@ qlf_tables <- pblapply(contrasts_edgeR, function(v){
 })
 
 
-saveRDS(qlf_tables, 'data_out/sc_counts_qlf_tables.rds')
+saveRDS(qlf_tables, 'Data_out/sc_counts_qlf_tables.rds')
 
 
 
@@ -117,9 +117,9 @@ colnames(design_no_int) <- levels(edgeR_prop2count$samples$group)
 edgeR_prop2count <- estimateDisp(edgeR_prop2count, design_no_int)
 fit <- glmQLFit(edgeR_prop2count, design_no_int, robust=TRUE)
 
-saveRDS(fit, 'data_out/sc_prop_edgeR_fit.rds')
+saveRDS(fit, 'Data_out/sc_prop_edgeR_fit.rds')
 
-fit <- readRDS('data_out/sc_prop_edgeR_fit.rds')
+#fit <- readRDS('Data_out/sc_prop_edgeR_fit.rds')
 
 ### make contrasts ----
 
@@ -153,7 +153,7 @@ qlf_tables <- pblapply(contrasts_edgeR, function(v){
 })
 
 
-saveRDS(qlf_tables, 'data_out/sc_prop_qlf_tables.rds')
+saveRDS(qlf_tables, 'Data_out/sc_prop_qlf_tables.rds')
 
 
 
