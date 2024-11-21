@@ -32,7 +32,7 @@ get_fdr <- function(expression, truth, threshold, na.rm = TRUE){
 }
 
 #### load data
-neuronal_gt <- read.table('../references/bulk_all_ground_truth_121023.csv', sep = ',')
+neuronal_gt <- read.table('references/bulk_all_ground_truth_121023.csv', sep = ',')
 
 
 
