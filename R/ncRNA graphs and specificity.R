@@ -46,8 +46,7 @@ fPem <- function(x){
 
 bulk_data <- read.table('Data/Bulk_data_bsn12_231211.tsv')
 
-#NNLS_reduce_store <- NNLS_reduce
-NNLS_reduce <- read.table('Data_out/NNLS_average_across_100_bootstraps.log1p.30Cells.231211.tsv')
+NNLS_reduce <- read.table('Data/NNLS_average_across_100_bootstraps.log1p.30Cells.231211.tsv')
 
 
 NNLS_reduce |> Heatmap(cluster_columns = F, row_order = order(rowMeans(NNLS_reduce), decreasing = T))
@@ -59,10 +58,6 @@ dim(NNLS_reduce)
 bulk_meta <- read.table('Data/bulk_bsn12_metadata.tsv', sep = '\t')
 
 bulk_meta <- bulk_meta[rownames(bulk_data),]
-
-dim(bulk_data)
-
-dim(bulk_meta)
 
 
 bulk_data_pk <- (bulk_data/bulk_meta$Length) * 1000
@@ -137,10 +132,7 @@ GeTMM_PEM_ncRNA <- GeTMM_PEM[intersect(rownames(GeTMM_PEM), rownames(ws289_allnc
 
 ### calculate correlation to contaminants
 
-
-
 NNLS_reduce <- NNLS_reduce[,intersect(colnames(NNLS_reduce), colnames(bulk_raw_GeTMM))]
-
 
 bulk_raw_GeTMM_nc <- bulk_raw_GeTMM[intersect(rownames(bulk_raw_GeTMM), rownames(ws289_allnc)),]
 
@@ -149,13 +141,14 @@ bulk_raw_GeTMM_nc <- bulk_raw_GeTMM_nc[!rownames(bulk_raw_GeTMM_nc) %in% ws289_p
 waldo::compare(colnames(bulk_raw_GeTMM_nc), colnames(NNLS_reduce))
 
 
+## for each gene calculate the correlation of the contaminant gene expression to the contamination score from the subsampled NNLS
 GeTMM_cor_s_contaminant_noncoding_genes <- t(pbsapply(rownames(bulk_raw_GeTMM_nc), function(gene){
   apply(NNLS_reduce[2:nrow(NNLS_reduce),colnames(bulk_raw_GeTMM_nc)], 1, function(tissue){
     stats::cor.test(bulk_raw_GeTMM_nc[gene,colnames(NNLS_reduce)], as.numeric(tissue), method = 'pearson')$estimate
   })
 }))
 
-
+#remove NA genes (445, 3.9%)
 GeTMM_cor_s_contaminant_noncoding_genes <- na.omit(GeTMM_cor_s_contaminant_noncoding_genes)
 
 
@@ -172,6 +165,7 @@ GeTMM_cor_s_contaminant_noncoding_genes <- na.omit(GeTMM_cor_s_contaminant_nonco
 #         legend.position = '')
 
 
+## take the highest correlation to a contaminant tissue type for each gene
 max_GeTMM_contaminant_corr_noncoding <- data.frame(row.names = rownames(GeTMM_cor_s_contaminant_noncoding_genes),
                                          MatrixGenerics::rowMaxs(as.matrix(GeTMM_cor_s_contaminant_noncoding_genes)))
 
@@ -183,7 +177,6 @@ max_GeTMM_contaminant_corr_noncoding <- data.frame(row.names = max_GeTMM_contami
                                                    ncRNA_corr = max_GeTMM_contaminant_corr_noncoding[max_GeTMM_contaminant_corr_noncoding_genes,1])
 
 #### calculate binary expression using static threshold ----
-
 
 nc_GeTMM_bin <- sapply(unique(str_split_fixed(colnames(bulk_raw_GeTMM_nc), 'r', 2)[,1]), function(cell){
   print(cell)
@@ -202,7 +195,7 @@ length(ncRNA_expressed_somewhere)
 
 
 
-### fit two gaussians
+### fit two gaussians to the maximum correlation to contaminants
 
 #devtools::install_github("yuliadm/mixComp")
 library(mixComp)
@@ -233,20 +226,25 @@ bayestestR::auc(seq(0,1,0.01),d1(seq(0,1,0.01)))
 bayestestR::auc(seq(0,1,0.01),d2(seq(0,1,0.01)))
 bayestestR::auc(seq(0,0.221,0.00001),d2(seq(0,0.221,0.00001)))/bayestestR::auc(seq(0,1,0.01),d2(seq(0,1,0.01)))
 
-plot(seq(0,1,0.01),d2(seq(0,1,0.01)))
 
 temp_nc_corr.df <- data.frame(ncRNA_corr = max_GeTMM_contaminant_corr_noncoding[ncRNA_expressed_somewhere,])
 
-values_ <- seq(min(temp_nc_corr.df$ncRNA_corr), max(temp_nc_corr.df$ncRNA_corr),length = nrow(temp_nc_corr.df)/10)
+
+## generate values to plot for the distributions, lazy conversion for ggplot
+values_ <- seq(min(temp_nc_corr.df$ncRNA_corr), 
+               max(temp_nc_corr.df$ncRNA_corr),
+               length = nrow(temp_nc_corr.df)/10)
 
 df <- data.frame(values = values_,
                  d1 = d1(values_),
                  d2 = d2(values_)
 )
 
-
+## set threshold for maximum correlation to contaminants
 contaminant_correlation_threshold = 0.221
 
+
+## select genes that are below that threshold
 genes_low_max_contaminant_corr <- rownames(max_GeTMM_contaminant_corr_noncoding)[max_GeTMM_contaminant_corr_noncoding[,1] < contaminant_correlation_threshold]
 
 
@@ -529,27 +527,6 @@ sapply(colnames(highly_specific_ncRNAS), function(x){ highly_specific_ncRNAS[,x]
 
 
 ### plot the highly specific genes ----
-hmap <- Heatmap(
-  log10(1+highly_specific_ncRNAS),
-  #tmp.df,
-  name = " ",
-  col = col_fun,
-  show_row_names = FALSE,
-  show_column_names = T,
-  cluster_rows = T,
-  cluster_columns = F,
-  #column_order = order(neuron_meta_cut.df$Modality_collapsed),
-  show_column_dend = F,
-  show_row_dend = F,
-  column_names_gp = gpar(fontsize = 15, fontface = 'bold'),
-  #top_annotation=colAnn,
-  )
-row_order(hmap)
-
-pdf("highly_specific_ncRNAS_heatmap.pdf",width=8,height=5)
-draw(hmap, heatmap_legend_side="right", annotation_legend_side="right")
-dev.off()
-
 library(tidyHeatmap)
 
 highly_specific_ncRNAS_tidy <- log10(1+t(highly_specific_ncRNAS)) |>
@@ -573,55 +550,11 @@ highly_specific_ncRNAS_tidy |>
 
 
 
-View(highly_specific_ncRNAS_ncRNA_genes)
 
 highly_specific_ncRNAS_ncRNA_genes.names <- highly_specific_ncRNAS_ncRNA_genes
 rownames(highly_specific_ncRNAS_ncRNA_genes.names) <- i2s(rownames(highly_specific_ncRNAS_ncRNA_genes.names), ws289)
 
 
-
-Heatmap(log10(1+aggr_nc_raw_GeTMM[rowSums(aggr_nc_raw_GeTMM > 200) > 0 & rowSums(aggr_nc_raw_GeTMM > 5) < 4,]))
-
-
-aggr_nc_raw_GeTMM[rowSums(aggr_nc_raw_GeTMM > 200) > 0 & rowSums(aggr_nc_raw_GeTMM > 5) < 20,]
-
-View(highly_specific_ncRNAS_ncRNA_genes.names[,c('ADL', 'AFD', 'ASK', 'RIC', 'RIM', 'VB')])
-View(highly_specific_ncRNAS_ncRNA_genes.names[rowSums(highly_specific_ncRNAS_ncRNA_genes.names > 200) > 0,])
-
-
-Heatmap(log10(1+aggr_nc_raw_GeTMM[rowSums(aggr_nc_raw_GeTMM > 100) > 1 &
-                                    rowSums(aggr_nc_raw_GeTMM > 20) < 10 &
-
-                                    rowSums(aggr_nc_raw_GeTMM > 1000) == 0,]))
-
-
-
-aggr_nc_raw_GeTMM[rowSums(aggr_nc_raw_GeTMM > 100) > 0 &
-                    rowSums(aggr_nc_raw_GeTMM > 20) < 2 &
-                    rowSums(aggr_nc_raw_GeTMM > 1000) == 0,] |> filter(RIM > 100)
-
-aggr_raw_GeTMM[s2i('T01A4.8', ws289),]
-aggr_raw_GeTMM['WBGene00',]
-aggr_raw_GeTMM['WBGene00009527',]
-aggr_raw_GeTMM['WBGene00012618',]
-aggr_raw_GeTMM['WBGene00304815',]
-aggr_raw_GeTMM['WBGene00199008',]
-aggr_raw_GeTMM['WBGene00219650',]
-aggr_raw_GeTMM['WBGene00044036',]
-aggr_raw_GeTMM['WBGene00197838',]
-aggr_raw_GeTMM['WBGene00201368',]
-aggr_raw_GeTMM['WBGene00014264',]
-aggr_raw_GeTMM['WBGene00023025',]
-aggr_raw_GeTMM['WBGene00022308',]
-aggr_raw_GeTMM['WBGene00195932',]
-aggr_raw_GeTMM['WBGene00219990',]
-aggr_raw_GeTMM['WBGene00197838',]
-
-barplot(unlist(aggr_raw_GeTMM['WBGene00197838',]) |> sort(, decreasing = T), las=2)
-
-names(unlist(aggr_raw_GeTMM['WBGene00014264',]) |> sort(, decreasing = T))[1:6] |> clipr::write_clip()
-
-palette.pals()
 
 ### plot the "pan-neuronal" genes ----
 hmap2 <- Heatmap(

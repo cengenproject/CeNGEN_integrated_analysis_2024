@@ -1,3 +1,4 @@
+### libraries
 
 library(dplyr)
 library(purrr)
@@ -38,7 +39,17 @@ get_fdr <- function(expression, truth, threshold, na.rm = TRUE){
 #      file = 'AUROC_Check_for_Alec.RData')
 
 
-load('AUROC_Check_for_Alec.RData')
+#load('../bsn12/AUROC_Check_for_Alec.RData')
+
+testing_matrix <-  read.table('references/ubiquitous_nonNeuronal_testing_matrix.tsv', sep = '\t')
+
+
+
+
+bulk_raw_TMM <- read.table('Data/bsn12_bulk_TMM_051624.tsv', sep = '\t')
+bulk_subtracted_TMM <- read.table('Data/bsn12_bulk_subtracted_TMM_051624.tsv', sep = '\t')
+bmind_neuron_count_TMM <- read.table('Data/bsn12_bulk_bMIND_TMM_051624.tsv', sep = '\t')
+egm_TMM <- read.table('Data/bsn12_bulk_enigma_TMM_051624.tsv', sep = '\t')
 
 
 aggr_raw_TMM <- bulk_raw_TMM
@@ -46,7 +57,6 @@ colnames(aggr_raw_TMM) <-str_split_fixed(colnames(aggr_raw_TMM),"r",2)[,1]
 aggr_raw_TMM <- data.frame(vapply(unique(colnames(aggr_raw_TMM)), function(x)
   rowMeans(aggr_raw_TMM[,colnames(aggr_raw_TMM)== x,drop=FALSE], na.rm=TRUE),
   numeric(nrow(aggr_raw_TMM)) ))
-dim(aggr_raw_TMM)
 
 
 aggr_subtracted_TMM <- bulk_subtracted_TMM
@@ -69,8 +79,15 @@ egm_ave <- data.frame(vapply(unique(colnames(egm_ave)), function(x)
   numeric(nrow(egm_ave)) ))
 
 
+
+genes <- rownames(testing_matrix)
+
 genes <- genes[(genes %in% rownames(egm_ave)) & (genes %in% rownames(bmind_ave))]
 
+neurons <- colnames(aggr_subtracted_TMM)
+
+testing_matrix$VD <- testing_matrix$VD_DD
+testing_matrix$DD <- testing_matrix$VD_DD
 
 testing_gt <- testing_matrix[genes, neurons]
 
@@ -175,14 +192,8 @@ ggsave('figures/UN_Testing_ROC_barchart_051624.pdf', width = 7, height = 7)
 
 
 
-tmp_ci <- ci.auc(raw_roc)
-tmp_ci[3]
-as.vector(tmp_ci)
-tmp_ci |> summary()
-raw_roc
 
-
-raw_vs_bmind <- roc.test(raw_roc, bmind_roc, method = 'delong') ### that this is statistically significant, feels insane to me
+raw_vs_bmind <- roc.test(raw_roc, bmind_roc, method = 'delong')
 
 raw_vs_enigma <- roc.test(raw_roc, enigma_roc, method = 'delong')
 raw_vs_subtracted <- roc.test(raw_roc, sub_roc, method = 'delong')
@@ -191,138 +202,5 @@ bmind_vs_enigma <- roc.test(bmind_roc, enigma_roc, method = 'delong')
 bmind_vs_subtracted <- roc.test(bmind_roc, sub_roc, method = 'delong')
 
 enigma_vs_subtracted <- roc.test(enigma_roc, sub_roc, method = 'delong')
-
-
-
-# 
-# per_sample_raw_diags <- lapply(colnames(bulk_raw_TMM), function(sample_){
-#   
-#   cell_type <- str_split_fixed(sample_, 'r', 2)[,1]
-#   
-#   prediction <- aggr_raw_TMM_plot[genes, sample_]
-#   case <- testing_matrix[genes,cell_type]
-# 
-#   diags <- tibble(threshold = c(0,2**seq(-17,12,0.05)),
-#                                       TPR = map_dbl(threshold, ~get_tpr(prediction, case, .x)),
-#                                       FPR = map_dbl(threshold, ~get_fpr(prediction, case, .x)),
-#                                       FDR = map_dbl(threshold, ~get_fdr(prediction, case, .x)),
-#                                       counts = "raw")
-#   
-#   auroc <- bayestestR::auc(diags$FPR, diags$TPR)
-#   
-#   return(list(auroc=auroc, diags=diags))
-# })
-# names(per_sample_raw_diags) <- colnames(aggr_raw_TMM_plot)
-# 
-# per_sample_sub_diags <- lapply(colnames(), function(sample_){
-#   
-#   cell_type <- str_split_fixed(sample_, 'r', 2)[,1]
-#   
-#   prediction <- bulk_subtracted_TMM[genes, sample_]
-#   case <- testing_matrix[genes,cell_type]
-# 
-#   diags <- tibble(threshold = c(0,2**seq(-17,12,0.05)),
-#                   TPR = map_dbl(threshold, ~get_tpr(prediction, case, .x)),
-#                   FPR = map_dbl(threshold, ~get_fpr(prediction, case, .x)),
-#                   FDR = map_dbl(threshold, ~get_fdr(prediction, case, .x)),
-#                   counts = "raw")
-#   
-#   auroc <- bayestestR::auc(diags$FPR, diags$TPR)
-#   
-#   return(list(auroc=auroc, diags=diags))
-# })
-# names(per_sample_sub_diags) <- colnames(bulk_raw_TMM)
-# 
-# per_sample_bMIND_diags <- lapply(colnames(bmind_neuron_count_TMM), function(sample_){
-#   
-#   cell_type <- str_split_fixed(sample_, 'r', 2)[,1]
-#   
-#   prediction <- bmind_neuron_count_TMM[genes, sample_]
-#   case <- testing_matrix[genes,cell_type]
-#   
-#   diags <- tibble(threshold = c(0,2**seq(-17,12,0.05)),
-#                   TPR = map_dbl(threshold, ~get_tpr(prediction, case, .x)),
-#                   FPR = map_dbl(threshold, ~get_fpr(prediction, case, .x)),
-#                   FDR = map_dbl(threshold, ~get_fdr(prediction, case, .x)),
-#                   counts = "raw")
-#   
-#   auroc <- bayestestR::auc(diags$FPR, diags$TPR)
-#   
-#   return(list(auroc=auroc, diags=diags))
-# })
-# names(per_sample_bMIND_diags) <- colnames(bmind_neuron_count_TMM)
-# 
-# per_sample_enigma_diags <- lapply(colnames(egm_TMM), function(sample_){
-#   
-#   cell_type <- str_split_fixed(sample_, 'r', 2)[,1]
-#   
-#   prediction <- egm_TMM[genes, sample_]
-#   case <- testing_matrix[genes,cell_type]
-#   
-#   diags <- tibble(threshold = c(0,2**seq(-17,12,0.05)),
-#                   TPR = map_dbl(threshold, ~get_tpr(prediction, case, .x)),
-#                   FPR = map_dbl(threshold, ~get_fpr(prediction, case, .x)),
-#                   FDR = map_dbl(threshold, ~get_fdr(prediction, case, .x)),
-#                   counts = "raw")
-#   
-#   auroc <- bayestestR::auc(diags$FPR, diags$TPR)
-#   
-#   return(list(auroc=auroc, diags=diags))
-# })
-# names(per_sample_enigma_diags) <- colnames(egm_TMM)
-# 
-# 
-# sapply(per_sample_raw_diags, function(x){x[['auroc']]})
-# sapply(per_sample_enigma_diags, function(x){x[['auroc']]})
-# 
-# plot(sapply(per_sample_enigma_diags, function(x){x[['auroc']]}),
-#      sapply(per_sample_sub_diags, function(x){x[['auroc']]}))
-# abline(a=0,b=1)
-# 
-# 
-# hist(sapply(per_sample_enigma_diags, function(x){x[['auroc']]}), breaks = 40)
-# 
-# tmp_ <- stats::wilcox.test(sapply(per_sample_bMIND_diags, function(x){x[['auroc']]}), 
-#        sapply(per_sample_raw_diags, function(x){x[['auroc']]}), paired = T
-#        )
-# 
-# 
-# tmp_$p.value * 12
-# 
-# tmp_ <- stats::wilcox.test(sapply(per_sample_raw_diags, function(x){x[['auroc']]}), 
-#                            sapply(per_sample_bMIND_diags, function(x){x[['auroc']]}), paired = F
-# )
-# 
-# 
-# tmp_$p.value * 12
-# 
-# plot(sapply(per_sample_raw_diags, function(x){x[['auroc']]}),
-#      sapply(per_sample_sub_diags, function(x){x[['auroc']]}),
-#      xlim = c(0.7,1), ylim = c(0.7,1),
-#      ylab = 'Little Bites Per Sample AUROC',
-#      xlab = 'Unaltered Bulk Per Sample AUROC',
-#      main = 'sample level AUROC\nLittle Bites vs Unaltered Bulk\n(Test Genes)')
-# abline(a=0,b=1)
-# 
-# plot(sapply(per_sample_raw_diags, function(x){x[['auroc']]}),
-#      sapply(per_sample_bMIND_diags, function(x){x[['auroc']]}),
-#      xlim = c(0.7,1), ylim = c(0.7,1),
-#      ylab = 'bMIND Per Sample AUROC',
-#      xlab = 'Unaltered Bulk Per Sample AUROC',
-#      main = 'sample level AUROC\nbMIND vs Unaltered Bulk\n(Test Genes)')
-# abline(a=0,b=1)
-# 
-# plot(sapply(per_sample_raw_diags, function(x){x[['auroc']]}),
-#      sapply(per_sample_enigma_diags, function(x){x[['auroc']]}),
-#      xlim = c(0.7,1), ylim = c(0.7,1),
-#      ylab = 'ENIGMA Per Sample AUROC',
-#      xlab = 'Unaltered Bulk Per Sample AUROC',
-#      main = 'sample level AUROC\nENIGMA vs Unaltered Bulk\n(Test Genes)')
-# abline(a=0,b=1)
-# 
-# hist(sapply(per_sample_sub_diags, function(x){x[['auroc']]}) -
-#        sapply(per_sample_raw_diags, function(x){x[['auroc']]}), breaks = seq(-0.2,0.2,0.005),
-#      xlab = '', main = 'sample level AUROC\nLittleBites vs Unaltered Bulk')
-# abline(v=0)
 
 

@@ -1,4 +1,4 @@
-
+### libraries
 library(dplyr)
 library(purrr)
 library(ggplot2)
@@ -32,20 +32,14 @@ get_fdr <- function(expression, truth, threshold, na.rm = TRUE){
 }
 
 #### load data
-
-bulk_raw_TMM |> write.table('Data_out/bsn12_bulk_TMM_051624.tsv', sep = '\t', quote = F)
-bulk_subtracted_TMM |> write.table('Data_out/bsn12_bulk_subtracted_TMM_051624.tsv', sep = '\t', quote = F)
-bmind_neuron_count_TMM |> write.table('Data_out/bsn12_bulk_bMIND_TMM_051624.tsv', sep = '\t', quote = F)
-egm_TMM |> write.table('Data_out/bsn12_bulk_enigma_TMM_051624.tsv', sep = '\t', quote = F)
-
 neuronal_gt <- read.table('../references/bulk_all_ground_truth_121023.csv', sep = ',')
 
 
 
-bulk_raw_TMM <- read.table('Data_out/bsn12_bulk_TMM_051624.tsv', sep = '\t')
-bulk_subtracted_TMM <- read.table('Data_out/bsn12_bulk_subtracted_TMM_051624.tsv', sep = '\t')
-bmind_neuron_count_TMM <- read.table('Data_out/bsn12_bulk_bMIND_TMM_051624.tsv', sep = '\t')
-egm_TMM <- read.table('Data_out/bsn12_bulk_enigma_TMM_051624.tsv', sep = '\t')
+bulk_raw_TMM <- read.table('Data/bsn12_bulk_TMM_051624.tsv', sep = '\t')
+bulk_subtracted_TMM <- read.table('Data/bsn12_bulk_subtracted_TMM_051624.tsv', sep = '\t')
+bmind_neuron_count_TMM <- read.table('Data/bsn12_bulk_bMIND_TMM_051624.tsv', sep = '\t')
+egm_TMM <- read.table('Data/bsn12_bulk_enigma_TMM_051624.tsv', sep = '\t')
 
 
 
@@ -55,7 +49,6 @@ colnames(aggr_raw_TMM) <-str_split_fixed(colnames(aggr_raw_TMM),"r",2)[,1]
 aggr_raw_TMM <- data.frame(vapply(unique(colnames(aggr_raw_TMM)), function(x)
   rowMeans(aggr_raw_TMM[,colnames(aggr_raw_TMM)== x,drop=FALSE], na.rm=TRUE),
   numeric(nrow(aggr_raw_TMM)) ))
-dim(aggr_raw_TMM)
 
 
 aggr_subtracted_TMM <- bulk_subtracted_TMM
@@ -77,8 +70,6 @@ egm_ave <- data.frame(vapply(unique(colnames(egm_ave)), function(x)
   rowMeans(egm_ave[,colnames(egm_ave)== x,drop=FALSE], na.rm=TRUE),
   numeric(nrow(egm_ave)) ))
 
-
-neuron_types_collected <- str_split_fixed(colnames())
 
 
 neurons <- intersect(colnames(aggr_subtracted_TMM), colnames(neuronal_gt))
@@ -173,7 +164,7 @@ sapply(roc_list, function(y){
     title = element_text(color = 'black', face = 'bold'))
 ggsave('figures/Neuronal_Testing_ROC_barchart_051624.pdf', width = 7, height = 7)
 
-raw_vs_bmind <- roc.test(raw_roc, bmind_roc, method = 'delong') ### that this is statistically significant, feels insane to me
+raw_vs_bmind <- roc.test(raw_roc, bmind_roc, method = 'delong')
 
 raw_vs_enigma <- roc.test(raw_roc, enigma_roc, method = 'delong')
 raw_vs_subtracted <- roc.test(raw_roc, sub_roc, method = 'delong')

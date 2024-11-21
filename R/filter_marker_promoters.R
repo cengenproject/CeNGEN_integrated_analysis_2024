@@ -73,13 +73,11 @@ marker_gene_coord <- sapply(marker_list_id, function(gene){
 
 marker_gene_coord
 
-write.table(marker_gene_coord, '../references/marker_gene_upstream_5k_051524.tsv', sep = '\t', quote = F, row.names = F)
+#write.table(marker_gene_coord, 'references/marker_gene_upstream_5k_051524.tsv', sep = '\t', quote = F, row.names = F)
 
 
-marker_gene_coord <- read.table('../references/marker_gene_upstream_5k_051524.tsv', sep = '\t', header = 1)
+#marker_gene_coord <- read.table('references/marker_gene_upstream_5k_051524.tsv', sep = '\t', header = 1)
 
-marker_gene_coord
-marker_gene_coord
 
 ws289_coord_GR <- makeGRangesFromDataFrame(ws289_coord)
 ws289_coord_GR@metadata <- ws289_coord
@@ -98,8 +96,9 @@ possible_artifact_genes <- tmp@ranges@NAMES
 
 marker_gene_coord
 
-ws289_coord |> filter(gene_id %in% possible_artifact_genes) |>
-  write.table('../references/ws289_CeNGEN_marker_possible_artifact_genes.tsv', sep = '\t')
+ws289_coord_possible_artifacts <- ws289_coord |> filter(gene_id %in% possible_artifact_genes)
+
+write.table(ws289_coord_possible_artifacts, 'references/ws289_CeNGEN_marker_possible_artifact_genes.tsv', sep = '\t')
 
 
 

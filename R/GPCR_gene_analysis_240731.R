@@ -1,5 +1,8 @@
 ##### load libraries ----
 
+library(ggplot2)
+library(ggbeeswarm)
+library(dplyr)
 
 
 
@@ -27,8 +30,7 @@ bulk_integrated_aggregate_threshold_2 <- read.table('Data/Integrated_thresholded
 #####
 
 
-gpcr_pseudogenes_table <- sapply(ncRNA_corr_cut.list.df, function(x){sum(x %in% 
-                                                                           SR_class_pseudogenes_joint)}) |> 
+gpcr_pseudogenes_table <- sapply(ncRNA_expr_list, function(x){sum(x %in% GPCR_pseudogenes$wormbase_id)}) |> 
   data.frame(sum = _)
 
 gpcr_pseudogenes_table$cell <- rownames(gpcr_pseudogenes_table)
@@ -64,7 +66,7 @@ GPCR_med_df <- sapply(colnames(bulk_integrated_aggregate_threshold_2_GPCR), func
   m <- modality[modality$Neuron == x, 'Modality'][1]
   if(x == 'VD_DD'){m = 'Motor'}
   return(c('GPCR_total' = as.numeric(gpcr), 'modality' = m, cell = x))
-}) #|> t() |> data.frame()
+}) |> t() |> data.frame()
 
 GPCR_med_df$GPCR_total <- as.numeric(GPCR_med_df$GPCR_total)
 

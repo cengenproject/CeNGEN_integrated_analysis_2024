@@ -3,12 +3,12 @@ library(Prop2CountR)
 library(Seurat)
 
 
-Prop2CountR::prop2count()
+#Prop2CountR::prop2count()
 
 
 ### load single cell counts data
 
-
+### L4 
 sc_object <- readRDS('../single_cell_data/100720_L4_all_cells_Seurat.rds')
 
 
@@ -71,5 +71,5 @@ neuron_prop2count_use <- neuron_prop2count[,sc_replicate_keep]
 neuron_prop2count_use
 max(neuron_prop2count_use)
 
-write.table(neuron_prop2count_use, 'Data_out/sc_biorep_prop2count_050124.tsv', sep = '\t', quote = F)
+write.table(neuron_prop2count_use, 'Data/sc_biorep_prop2count_050124.tsv', sep = '\t', quote = F)
 

@@ -61,21 +61,13 @@ ggsave('figures/single_replicate_nbModel_real_counts_SIA__unc-47_2_240531.pdf', 
 sim_1_nb <- function(N=300,success = 1, prob = .9){
   y <- rnbinom(N, success, prob)
   
-  data.frame(C = sum(y),
-             P = mean(y > 0))
+  data.frame(C = sum(y), ### C = total counts per cell
+             P = mean(y > 0)) ### P = proportion of cells with > 0 counts 
 }
 
 
-# set.seed(123)
-# res_nb_var <- tibble(N = rpois(2000, 10000),
-#                      s = rpois(2000, 10)/10,
-#                      p = rbeta(2000, 0.5, 0.5)) |>
-#   mutate(res = pmap(list(N,s,p), sim_1_nb)) |>
-#   unnest(res)
 
-
-
-## simulate a cluster with 1000 cells and 2000 genes
+## simulate a cluster with 1000 cells
 set.seed(123)
 res_nb_var <- tibble(N = 1000,
                      s = rpois(1000, 10)/10,
@@ -83,7 +75,7 @@ res_nb_var <- tibble(N = 1000,
   mutate(res = pmap(list(N,s,p), sim_1_nb)) |>
   unnest(res)
 
-res_nb_var <- res_nb_var[res_nb_var$P < 1 & res_nb_var$P > 0,]
+res_nb_var <- res_nb_var[res_nb_var$P < 1 & res_nb_var$P > 0,] ### remove values from plotting that would produce infinites
 
 ggplot(res_nb_var) +
   geom_abline(slope = 1, intercept = 0, color='red') +
