@@ -35,11 +35,10 @@ get_fdr <- function(expression, truth, threshold, na.rm = TRUE){
 neuronal_gt <- read.table('references/bulk_all_ground_truth_121023.csv', sep = ',')
 
 
-
-bulk_raw_TMM <- read.table('Data/bsn12_bulk_TMM_051624.tsv', sep = '\t')
-bulk_subtracted_TMM <- read.table('Data/bsn12_bulk_subtracted_TMM_051624.tsv', sep = '\t')
-bmind_neuron_count_TMM <- read.table('Data/bsn12_bulk_bMIND_TMM_051624.tsv', sep = '\t')
-egm_TMM <- read.table('Data/bsn12_bulk_enigma_TMM_051624.tsv', sep = '\t')
+bulk_raw_TMM <- read.table('Data/bsn12_bulk_TMM_051624.tsv.gz', sep = '\t')
+bulk_subtracted_TMM <- read.table('Data/bsn12_bulk_subtracted_TMM_051624.tsv.gz', sep = '\t')
+bmind_neuron_count_TMM <- read.table('Data/bsn12_bulk_bMIND_TMM_051624.tsv.gz', sep = '\t')
+egm_TMM <- read.table('Data/bsn12_bulk_enigma_TMM_051624.tsv.gz', sep = '\t')
 
 
 

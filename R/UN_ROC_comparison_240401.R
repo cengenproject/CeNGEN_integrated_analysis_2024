@@ -6,7 +6,7 @@ library(ggplot2)
 library(bayestestR)
 library(pROC)
 library(stringr)
-
+library(patchwork)
 
 
 
@@ -203,4 +203,104 @@ bmind_vs_subtracted <- roc.test(bmind_roc, sub_roc, method = 'delong')
 
 enigma_vs_subtracted <- roc.test(enigma_roc, sub_roc, method = 'delong')
 
+
+
+
+###
+
+## per sample ROC
+
+bulk_sample_auc <- sapply(colnames(bulk_raw_TMM), function(x){
+  print(x)
+  sample <- bulk_raw_TMM[genes, x, drop = F]
+  cell <- str_split_fixed(x, 'r', 2)[,1]
+  gt <- testing_gt[genes, cell, drop = F]
+  
+  roc(gt |> unlist(),
+      sample |> log1p() |> unlist())$auc
+  
+})
+subtracted_sample_auc <- sapply(colnames(bulk_subtracted_TMM), function(x){
+  sample <- bulk_subtracted_TMM[genes, x, drop = F]
+  cell <- str_split_fixed(x, 'r', 2)[,1]
+  gt <- testing_gt[genes, cell, drop = F]
+  
+  roc(gt |> unlist(),
+      sample |> log1p() |> unlist())$auc
+  
+})
+bMIND_sample_auc <- sapply(colnames(bmind_neuron_count_TMM), function(x){
+  sample <- bmind_neuron_count_TMM[genes, x, drop = F]
+  cell <- str_split_fixed(x, 'r', 2)[,1]
+  gt <- testing_gt[genes, cell, drop = F]
+  
+  roc(gt |> unlist(),
+      sample |> log1p() |> unlist())$auc
+  
+})
+egm_sample_auc <- sapply(colnames(egm_TMM), function(x){
+  sample <- egm_TMM[genes, x, drop = F]
+  cell <- str_split_fixed(x, 'r', 2)[,1]
+  gt <- testing_gt[genes, cell, drop = F]
+  
+  roc(gt |> unlist(),
+      sample |> log1p() |> unlist())$auc
+  
+})
+
+sample_auc_df <- data.frame(bulk_sample_auc = bulk_sample_auc,
+                            subtracted_sample_auc = subtracted_sample_auc,
+                            bMIND_sample_auc = bMIND_sample_auc,
+                            egm_sample_auc = egm_sample_auc)
+sample_auc_df$sample <- sample_auc_df |> rownames()
+sample_auc_df$neuron <- str_split_fixed(sample_auc_df$sample, 'r', 2)[,1]
+
+ggplot(sample_auc_df, aes(x = bulk_sample_auc, y = subtracted_sample_auc, label = sample, color = neuron)) + #1
+  geom_point(size = 1) + ggrepel::geom_text_repel() + 
+  ggrepel::geom_text_repel(data = sample_auc_df[sample_auc_df$sample == 'PVCr215',], 
+                           aes(x = bulk_sample_auc, y = subtracted_sample_auc, label = sample, color = neuron), inherit.aes = F) +
+  geom_abline(slope = 1) +
+  scale_x_continuous(limits = c(0.7,1)) +
+  scale_y_continuous(limits = c(0.7,1)) +
+  labs(x = 'unaltered bulk per-sample auc', y = 'subtracted per-sample auc') +
+  theme(legend.position = '') +
+  ggplot(sample_auc_df, aes(x = bMIND_sample_auc, y = subtracted_sample_auc, label = sample, color = neuron)) + #2
+  geom_point(size = 1) + ggrepel::geom_text_repel() +
+  geom_abline(slope = 1) +
+  scale_x_continuous(limits = c(0.7,1)) +
+  scale_y_continuous(limits = c(0.7,1)) +
+  labs(x = 'bMIND per-sample auc', y = 'subtracted per-sample auc') +
+  theme(legend.position = '') +
+  ggplot(sample_auc_df, aes(x = egm_sample_auc, y = subtracted_sample_auc, label = sample, color = neuron)) + #3
+  geom_point(size = 1) + ggrepel::geom_text_repel() +
+  geom_abline(slope = 1) +
+  scale_x_continuous(limits = c(0.7,1)) +
+  scale_y_continuous(limits = c(0.7,1)) +
+  labs(x = 'enigma per-sample auc', y = 'subtracted per-sample auc') +
+  theme(legend.position = '') + 
+  ggplot(sample_auc_df, aes(x = bulk_sample_auc, y = bMIND_sample_auc, label = sample, color = neuron)) + #4
+  geom_point(size = 1) + ggrepel::geom_text_repel() +
+  geom_abline(slope = 1) +
+  scale_x_continuous(limits = c(0.7,1)) +
+  scale_y_continuous(limits = c(0.7,1)) +
+  labs(x = 'unaltered bulk per-sample auc', y = 'bMIND per-sample auc') +
+  theme(legend.position = '') +
+  ggplot(sample_auc_df, aes(x = bMIND_sample_auc, y = egm_sample_auc, label = sample, color = neuron)) + #5
+  geom_point(size = 1) + ggrepel::geom_text_repel() +
+  geom_abline(slope = 1) +
+  scale_x_continuous(limits = c(0.7,1)) +
+  scale_y_continuous(limits = c(0.7,1)) +
+  labs(x = 'bMIND per-sample auc', y = 'enigma per-sample auc') +
+  theme(legend.position = '') +
+  plot_spacer() +
+  ggplot(sample_auc_df, aes(x = bulk_sample_auc, y = egm_sample_auc, label = sample, color = neuron)) + #6
+  geom_point(size = 1) + ggrepel::geom_text_repel() +
+  geom_abline(slope = 1) +
+  scale_x_continuous(limits = c(0.7,1)) +
+  scale_y_continuous(limits = c(0.7,1)) +
+  labs(x = 'unaltered bulk per-sample auc', y = 'enigma per-sample auc') +
+  #labs(x = 'enigma per-sample auc', y = 'subtracted per-sample auc') +
+  theme(legend.position = '') +
+  plot_layout(ncol = 3)
+ggsave('per sample UN AUC 250528.pdf', width = 8, height = 8)
 
