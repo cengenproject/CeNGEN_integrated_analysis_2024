@@ -8,7 +8,7 @@
 
 ## required files not included here:
 
-"032224_L4_all_cells_Seurat5.rds" and " found on the [CeNGEN downloads page](https://www.cengen.org/downloads/), the full dataset (100k cells) was used for this analysis. [direct download link](https://cengen.org/storage/032224_L4_all_cells_Seurat5.rds)
+"032224_L4_all_cells_Seurat5.rds" found on the [CeNGEN downloads page](https://www.cengen.org/downloads/), the full dataset (100k cells) was used for this analysis. [direct download link](https://cengen.org/storage/032224_L4_all_cells_Seurat5.rds)
 
 ### Figure 1
 
