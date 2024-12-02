@@ -51,6 +51,7 @@ Visualizing Differential Expression vs Ground Truth: R/Differential_expression_m
 
 Generating Integrated Datasets: R/Integrated_bulk_SingleCell.R
 
+Neuronal ROC, AUROC, Precision-Recall, and Sensitivity bootstrapping plots: R/Integrated_Neuronal_ROC.R
 
 
 ### Supplementary Figure 4
