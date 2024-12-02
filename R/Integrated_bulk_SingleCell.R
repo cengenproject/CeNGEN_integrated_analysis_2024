@@ -138,5 +138,5 @@ integrated_data_CPM <- sweep(integrated_data,
                              STATS = colSums(integrated_data),
                              FUN = '/') * 1000000
 
-write.table(integrated_data_CPM, 'Data_out/bsn12_subtracted_integrated_propadjust_071724.tsv',
+write.table(integrated_data_CPM, 'Data/bsn12_subtracted_integrated_propadjust_071724.tsv',
             sep = '\t', quote = F)
