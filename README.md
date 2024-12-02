@@ -83,4 +83,4 @@ Some genes were removed from analysis because they are prone to artifactual expr
 
 ### Supplementary Figure 6
 
-Relative maximum gene expression distributions, Contamination correlation cutoffs, ubiquitous ncRNA gene distribution, and total ncRNA genes per cell (by gene biotype): R/ncRNA_graphs_and_specificity.R
+<ins>Relative maximum gene expression distributions, Contamination correlation cutoffs, ubiquitous ncRNA gene distribution, and total ncRNA genes per cell (by gene biotype):</ins> R/ncRNA_graphs_and_specificity.R
