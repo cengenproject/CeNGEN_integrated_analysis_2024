@@ -32,6 +32,34 @@ ROC for neuronal genes: R/Neuronal_ROC_comparison_240516.R
 
 ### Supplementary Figure 2
 
+AUROC barcharts for non-neuronal and ubiquitous genes: R/UN_ROC_comparison_240401.R
+AUCROC barcharts for neuronal genes: R/Neuronal_ROC_comparison_240516.R
+AUROC scatterplots for non-neuronal and ubiquitous genes per sample: R/UN_ROC_comparison_240401.R
+
 ### Figure 3
 
+AFD ttx-1 expression: R/AFD_UMAP.R
+Single Cell ROC plot: R/
+Simulated and real logit models: R/240520_Logit_transform_parameter_comparison.R
+
+### Supplementary Figure 3
+
+Running Differential Expression analysis: R/single_cell_differential_expression.R
+Visualizing Differential Expression vs Ground Truth: R/Differential_expression_metrics.R
+
+### Figure 4
+
+Generating Integrated Datasets: R/Integrated_bulk_SingleCell.R
+
+
+
+### Supplementary Figure 4
+
+### Figure 5
+
+### Supplementary Figure 5
+
+### Figure 6
+
+### Supplementary Figure 6
 
