@@ -16,70 +16,70 @@
 
 Some genes were removed from analysis because they are prone to artifactual expression patterns due to their potential inclusion in promoter-fusion constructs used for FACS sorting.
 
-Putative artifact gene identification described in: R/filter_marker_promoters.R
+<ins>Putative artifact gene identification described in:</ins> R/filter_marker_promoters.R
 
 ### Figure 1
 
-FACS plots and micrographs are not included here
-PCA: R/plot_PCA.R
+<ins>FACS plots and micrographs are not included here</ins>   
+<ins>PCA:</ins> R/plot_PCA.R
 
 ### Supplementary Figure 1
 
-Single Cell - Bulk Correlation plot: R/Bulk_single_cell_correlation_heatmap.R
+<ins>Single Cell - Bulk Correlation plot:</ins> R/Bulk_single_cell_correlation_heatmap.R
 
 ### Figure 2
 
-pre-processing:
-    bMIND: R/bMIND_deconvolution.R
-    ENIGMA: R/ ENIGMA_L2_norm.R
+<ins>pre-processing LittleBites:</ins> R/subtraction.R  
+<ins>pre-processing bMIND:</ins> R/bMIND_deconvolution.R  
+<ins>pre-processing ENIGMA:</ins> R/ ENIGMA_L2_norm.R
 
-ROC for non-neuronal and ubiquitous genes: R/UN_ROC_comparison_240401.R
-ROC for neuronal genes: R/Neuronal_ROC_comparison_240516.R
+<ins>ROC for non-neuronal and ubiquitous genes:</ins> R/UN_ROC_comparison_240401.R  
+<ins>ROC for neuronal genes:</ins> R/Neuronal_ROC_comparison_240516.R
 
 ### Supplementary Figure 2
 
-AUROC barcharts for non-neuronal and ubiquitous genes: R/UN_ROC_comparison_240401.R
-AUCROC barcharts for neuronal genes: R/Neuronal_ROC_comparison_240516.R
-AUROC scatterplots for non-neuronal and ubiquitous genes per sample: R/UN_ROC_comparison_240401.R
+<ins>AUROC barcharts for non-neuronal and ubiquitous genes:</ins> R/UN_ROC_comparison_240401.R   
+<ins>AUCROC barcharts for neuronal genes:</ins> R/Neuronal_ROC_comparison_240516.R  
+<ins>AUROC scatterplots for non-neuronal and ubiquitous genes per sample:</ins> R/UN_ROC_comparison_240401.R  
 
 ### Figure 3
 
-AFD ttx-1 expression: R/AFD_UMAP.R
-Single Cell ROC plot: R/
-Simulated and real logit models: R/240520_Logit_transform_parameter_comparison.R
+<ins>AFD ttx-1 expression:</ins> R/AFD_UMAP.R  
+<ins>Single Cell ROC plot:</ins> R/  
+<ins>Simulated and real logit models:</ins> R/240520_Logit_transform_parameter_comparison.R  
 
 ### Supplementary Figure 3
 
-Running Differential Expression analysis: R/single_cell_differential_expression.R
-Visualizing Differential Expression vs Ground Truth: R/Differential_expression_metrics.R
+<ins>Running Differential Expression analysis:</ins> R/single_cell_differential_expression.R  
+<ins>Visualizing Differential Expression vs Ground Truth:</ins> R/Differential_expression_metrics.R  
 
 ### Figure 4
 
-Generating Integrated Datasets: R/Integrated_bulk_SingleCell.R
+<ins>Generating Integrated Datasets:</ins> R/Integrated_bulk_SingleCell.R
 
-Neuronal ROC, AUROC, Precision-Recall, and Sensitivity bootstrapping plots: R/Integrated_Neuronal_ROC.R
-Barchart of genes detected in single cell and integrated: R/Integrated_genes_new_detection.R
+<ins>Neuronal ROC, AUROC, Precision-Recall, and Sensitivity bootstrapping plots:</ins> R/Integrated_Neuronal_ROC.R  
+<ins>Barchart of genes detected in single cell and integrated:</ins> R/Integrated_genes_new_detection.R
 
-GO term and anatomical enrichment performed using the Enrichment Analysis tool on wormbase https://wormbase.org/tools/enrichment/tea/tea.cgi
+<ins>GO term and anatomical enrichment performed using the Enrichment Analysis tool on wormbase</ins> https://wormbase.org/tools/enrichment/tea/tea.cgi
 
 ### Supplementary Figure 4
 
 
 ### Figure 5
 
-Scatterplots and bar plots of genes detected in integrated data but missed in single cell: R/Integrated_genes_new_detection.R
+<ins>Scatterplots and bar plots of genes detected in integrated data but missed in single cell:</ins> R/Integrated_genes_new_detection.R
 
 ### Supplementary Figure 5
 
-GO term and anatomical enrichment performed using the Enrichment Analysis tool on wormbase https://wormbase.org/tools/enrichment/tea/tea.cgi
+<ins>GO term and anatomical enrichment performed using the Enrichment Analysis tool on wormbase</ins> https://wormbase.org/tools/enrichment/tea/tea.cgi
 
-Gene lists for each cell that was used as input for the GSEA tool can be extracted using: R/Integrated_genes_new_detection.R
+<ins>Gene lists for each cell that was used as input for the GSEA tool can be extracted using:</ins> R/Integrated_genes_new_detection.R
 
 ### Figure 6
 
-Noncoding RNA pie charts, and specific gene expression pattern heatmap: R/ncRNA_graphs_and_specificity.R
+<ins>Noncoding RNA pie charts, and specific gene expression pattern heatmap:</ins> R/ncRNA_graphs_and_specificity.R
 
-GPCR pseudogene expression plots: R/GPCR_gene_analysis_240731.R
+<ins>GPCR pseudogene expression plots:</ins> R/GPCR_gene_analysis_240731.R
 
 ### Supplementary Figure 6
 
