@@ -36,20 +36,20 @@ get_fdr <- function(expression, truth, threshold, na.rm = TRUE){
 #### load data
 
 
-neuronal_gt <- read.table('../references/bulk_all_ground_truth_121023.csv', sep = ',')
+neuronal_gt <- read.table('references/bulk_all_ground_truth_121023.csv', sep = ',')
 neuronal_gt$VD_DD <- neuronal_gt$VD
 
-bulk_raw_TMM <- read.table('Data_out/bsn12_bulk_TMM_051624.tsv', sep = '\t')
-bulk_subtracted_TMM <- read.table('Data_out/bsn12_bulk_subtracted_TMM_051624.tsv', sep = '\t')
-bulk_integrated_aggregate <- read.table('Data_out/bsn12_subtracted_integrated_propadjust_071724.tsv')
+bulk_raw_TMM <- read.table('Data/bsn12_bulk_TMM_051624.tsv.gz', sep = '\t')
+bulk_subtracted_TMM <- read.table('Data/bsn12_bulk_subtracted_TMM_051624.tsv.gz', sep = '\t')
+bulk_integrated_aggregate <- read.table('Data/bsn12_subtracted_integrated_propadjust_071724.tsv.gz')
 
 
 
-sc_TPM <- read.table('../single_cell_data/CeNGEN_TPM_080421.tsv')
+sc_TPM <- read.table('Data/CeNGEN_TPM_080421.tsv.gz')
 sc_TPM$VD_DD <- sc_TPM$VD
 
 
-prop_by_type <- read.table('Data//SingleCell_proportions_Bulk_annotations.tsv')
+prop_by_type <- read.table('Data/SingleCell_proportions_Bulk_annotations.tsv.gz')
 colnames(prop_by_type)
 prop_by_type <- prop_by_type[,setdiff(colnames(prop_by_type), c('Intestine',
                                                                 'Glia',
@@ -107,8 +107,8 @@ neurons <- intersect(colnames(bulk_integrated_aggregate), neurons)
 
 
 neuronal_gt_genes <- intersect(rownames(aggr_subtracted_TMM), rownames(neuronal_gt))
-
-
+nrow(neuronal_gt)
+sum(rownames(neuronal_gt) %in% rownames(aggr_raw_TMM))
 
 ### subset down to selected genes and neurons
 aggr_raw_TMM_plot <- aggr_raw_TMM[neuronal_gt_genes, neurons]
@@ -163,20 +163,6 @@ diags_adjusted_proportions_plot <- tibble(threshold = c(0,2**seq(-17,12,0.05)),
 
 
 ## plot ROC & PR curves
-
-bind_rows(diags_sc_TPM_plot,
-          diags_proportions_plot) |> 
-  mutate(counts = factor(counts, levels = c("sc TPM", 'sc proportions', "sc adjusted proportions"))) |>
-  ggplot(aes(x = FPR, y=TPR, color= counts)) +
-  geom_abline(slope = 1, linetype='dashed') +
-  geom_path(linewidth = 2, alpha = 0.7) +
-  ggtitle('ROC for neuronal\ntesting genes') +
-  theme_classic(base_size = 20) +
-  theme(axis.text = element_text(color = 'black', face = 'bold'), 
-        axis.title = element_text(color = 'black', face = 'bold'),
-        title = element_text(color = 'black', face = 'bold'))
-ggsave('figures/Prop2Count/Ai_proportions_vs_TPM_ROC_240616.pdf', width = 7, height = 5)
-
 
 
 bind_rows(diags_aggr_raw_ave_plot,
