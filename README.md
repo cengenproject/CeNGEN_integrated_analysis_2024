@@ -45,7 +45,7 @@ Some genes were removed from analysis because they are prone to artifactual expr
 ### Figure 3
 
 <ins>AFD ttx-1 expression:</ins> R/AFD_UMAP.R  
-<ins>Single Cell ROC plot:</ins> R/  
+<ins>Single Cell ROC plot:</ins> R/Single_cell_ROC.R  
 <ins>Simulated and real logit models:</ins> R/240520_Logit_transform_parameter_comparison.R  
 
 ### Supplementary Figure 3
