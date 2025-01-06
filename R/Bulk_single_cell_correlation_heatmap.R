@@ -11,9 +11,9 @@ strict <- cengenDataSC::cengen_sc_4_bulk
 strict[strict>0] = 1
 
 
-bulk_data <- read.table('Data/Bulk_data_bsn12_231211.tsv')
+bulk_data <- read.table('Data/Bulk_data_bsn12_231211.tsv.gz')
 
-bulk_meta <- read.table('Data/bulk_bsn12_metadata.tsv', sep = '\t')
+bulk_meta <- read.table('Data/bulk_bsn12_metadata.tsv.gz', sep = '\t')
 bulk_meta <- bulk_meta[rownames(bulk_data),]
 
 
@@ -81,7 +81,7 @@ col_fun_ <- circlize::colorRamp2(colors = c('white', '#Cc0202'), breaks = c(min(
 
 col_dend = as.dendrogram(hclust(dist(t(strict_bulk_corr_pairwise))))
 
-pdf('figures/Supplementary correlation heatmap.pdf', height = 12, width = 12)
+pdf('figures/Supplementary figure 1 correlation heatmap.pdf', height = 12, width = 12)
 Heatmap(strict_bulk_corr_pairwise, cluster_rows = col_dend, cluster_columns = col_dend, 
         row_names_side = 'left',
         col = col_fun_,
