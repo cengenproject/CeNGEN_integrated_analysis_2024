@@ -81,7 +81,9 @@ col_fun_ <- circlize::colorRamp2(colors = c('white', '#Cc0202'), breaks = c(min(
 col_dend = as.dendrogram(hclust(dist(t(strict_bulk_corr_pairwise))))
 
 pdf('figures/Supplementary figure 1 correlation heatmap.pdf', height = 12, width = 12)
-Heatmap(strict_bulk_corr_pairwise, cluster_rows = col_dend, cluster_columns = col_dend, 
+Heatmap(strict_bulk_corr_pairwise, 
+        cluster_rows = col_dend, 
+        cluster_columns = col_dend, 
         row_names_side = 'left',
         col = col_fun_,
         show_row_dend = F, show_column_dend = F, name = ' ',
