@@ -10,7 +10,6 @@ library(edgeR)
 strict <- cengenDataSC::cengen_sc_4_bulk
 strict[strict>0] = 1
 
-
 bulk_data <- read.table('Data/Bulk_data_bsn12_231211.tsv.gz')
 
 bulk_meta <- read.table('Data/bulk_bsn12_metadata.tsv.gz', sep = '\t')
