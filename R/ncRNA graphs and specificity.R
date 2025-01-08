@@ -373,7 +373,7 @@ sum(highly_specific_ncRNAS$RIM > 6)
 RIM_specific_genes <- highly_specific_ncRNAS |> filter(RIM > 6) |> rownames()
 
 
-ws289_gene_coords <- wbData::wb_load_gene_coords('281')
+ws289_gene_coords <- wbData::wb_load_gene_coords('289')
 
 ws289_gene_coords_RIM <- ws289_gene_coords |> filter(gene_id %in% RIM_specific_genes)
 
