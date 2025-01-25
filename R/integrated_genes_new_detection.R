@@ -19,7 +19,7 @@ library(nlstools)
 
 ### load data, normalized ----
 
-integrated_data <- read.table('Data/bsn12_subtracted_integrated_propadjust_071724.tsv')
+integrated_data <- read.table('Data/bsn12_subtracted_integrated_propadjust_071724.tsv.gz')
 
 
 ### load single cell ncell reference
@@ -173,15 +173,10 @@ medium_threshold_detected_melt <- medium_threshold_detected |> reshape::melt()
 
 cells_ <- unique(medium_threshold_detected_melt$cell)
 
-cells_[order(ncells[cells_])]
-
 
 medium_threshold_detected_melt$ncell <- ncells[medium_threshold_detected_melt$cell,]
 medium_threshold_detected_melt$cell_order <- factor(medium_threshold_detected_melt$cell, 
                                                     levels = cells_[order(ncells[cells_,])])
-medium_threshold_detected_melt |> filter(variable == 'integrated_sc_ratio') |>
-  ggplot() +
-  geom_col(aes(x = cell_order, y = log2(value), fill = variable), position = 'dodge2')
 
 medium_threshold_detected_melt |> filter(variable != 'integrated_sc_ratio') |>
   ggplot() +
