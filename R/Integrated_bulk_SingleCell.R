@@ -58,7 +58,7 @@ integrate_geometricMean_biorep <- function(bulk_replicates,
 
 
 
-bulk_subtracted_TMM <- read.table('Data/bsn12_bulk_subtracted_TMM_051624.tsv', sep = '\t')
+bulk_subtracted_TMM <- read.table('Data/bsn12_bulk_subtracted_TMM_051624.tsv.gz', sep = '\t')
 
 
 aggr_subtracted_TMM <- bulk_subtracted_TMM
@@ -74,7 +74,7 @@ aggr_subtracted_TMM <- data.frame(vapply(unique(colnames(aggr_subtracted_TMM)), 
 #~~ Single cell ----
 
 # note importing from sc project
-prop_by_type <- read.table('Data/SingleCell_proportions_Bulk_annotations.tsv')
+prop_by_type <- read.table('Data/SingleCell_proportions_Bulk_annotations.tsv.gz')
 
 colnames(prop_by_type)
 ## remove non-neuronal profiles
