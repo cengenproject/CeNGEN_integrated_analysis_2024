@@ -5,6 +5,7 @@
 ## required packages to install
 [LittleBites](https://github.com/alecbarrett/LittleBites)
 [Prop2Count](https://github.com/alecbarrett/Prop2Count)
+[cengenDataSC](https://github.com/AlexWeinreb/cengenDataSC)
 
 ## required files not included here:
 
