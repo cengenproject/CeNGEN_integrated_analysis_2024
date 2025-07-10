@@ -14,7 +14,7 @@ library(nlstools)
 
 ### load data, normalized ----
 
-integrated_data <- read.table('Data_out/Integrated_thresholded/Integrated_bsn12_cpm_unthresholded_070625.csv')
+integrated_data <- read.csv('Data_out/Integrated_thresholded/Integrated_bsn12_cpm_unthresholded_070625.csv')
 
 
 ### load single cell ncell reference
@@ -89,7 +89,6 @@ for (col_name in colnames(integrated_data_subset_threshold)) {
 }
 
 
-new_genes$SIA |> clipr::write_clip()
 
 ### new genes per cell plot
 

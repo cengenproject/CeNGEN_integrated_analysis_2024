@@ -7,6 +7,7 @@ library(nnls)
 library(parallel)
 library(edgeR)
 library(pbmcapply)
+library(broom)
 
 
 
@@ -486,26 +487,37 @@ cv_summary |> ggplot() +
                position = 'dodge2', notch = T)
 
 
-summary(glm(mean_gene_cv ~ (subsample_size), data = cv_summary))
-summary(glm(final_purity_mean ~ (subsample_size), data = cv_summary))
-summary(glm(test_auroc_mean ~ (subsample_size), data = cv_summary))
-summary(glm(mean_pairwise_correlation ~ (subsample_size), data = cv_summary))
+summary(glm(mean_gene_cv ~ log10(subsample_size), data = cv_summary))
+summary(glm(final_purity_mean ~ log10(subsample_size), data = cv_summary))
+summary(glm(test_auroc_mean ~ log10(subsample_size), data = cv_summary))
+summary(glm(mean_pairwise_correlation ~ log10(subsample_size), data = cv_summary))
 
-summary(gam((mean_pairwise_correlation) ~ subsample_size + s(sample, bs='re'),
-            data = cv_summary))
 
-library(glmmTMB)
+results <- cv_summary |>
+  group_by(neuron_type) |>
+  group_modify(~{
+    model <- glmmTMB(log10(subtracted_mean_mean) ~ log10(subsample_size) + (1|sample),
+                     family = gaussian(link='identity'),
+                     data = .x)
+    
+    tibble(
+      slope = fixef(model)$cond["log10(subsample_size)"],
+      slope_se = sqrt(vcov(model)$cond["log10(subsample_size)", "log10(subsample_size)"]),
+      t_value = slope / slope_se,
+      p_value = summary(model)$coefficients$cond["log10(subsample_size)", "Pr(>|z|)"]
+    )
+  })
 
-summary(glmmTMB(subtracted_mean_mean ~ subsample_size + (1|sample),
-                family = gaussian(link='identity'),
-                data = cv_summary))
+results |> select(neuron_type, slope, slope_se, t_value, p_value)
+
+
 
 cv_summary |> 
   ggplot(aes(x = subsample_size,
              y = initial_purity_mean),) +
   geom_violin(aes(fill = as.factor(subsample_size)), ) +
   geom_smooth(
-    method = 'lm', se = F) +
+    method = 'lm', se = F, color = 'black') +
   scale_x_continuous(transform = 'log10') +
   ylab('Average neuron composition estimate per unaltered sample') +
   xlab('single cell reference cluster size') +
@@ -516,15 +528,15 @@ ggsave('figures/Figure_2/reference_subsampling_initial_composition.pdf', width =
 
 cv_summary |> 
   ggplot(aes(x = subsample_size,
-             y = subtracted_mean_mean),) +
+             y = initisubtracted_mean_mean),) +
   geom_violin(aes(fill = as.factor(subsample_size)), ) +
-  geom_smooth(aes(group = neuron_type),
+  geom_smooth(aes(group = neuron_type, color = neuron_type),
     method = 'lm', se = F) +
   scale_x_continuous(transform = 'log10') +
   scale_y_continuous(transform = 'log10') +
-  ylab('Average neuron composition estimate per unaltered sample') +
+  ylab('Cleaned sample mean expression') +
   xlab('single cell reference cluster size') +
-  ggtitle('LittleBites reference depth\nvs\nneuron composition estimate') +
+  ggtitle('LittleBites reference depth\nvs\nsubtracted_sample_') +
   theme_minimal() +
   theme(plot.title = element_text(hjust = 0.5), axis.text = element_text(color = 'black'))
 ggsave('figures/Figure_2/reference_subsampling_initial_composition.pdf', width = 10, height = 10)

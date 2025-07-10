@@ -20,7 +20,7 @@ modality <- read.table('references/Neuron_annotation_070921.csv', sep = ',', hea
 
 ncRNA_expr_list <- readRDS('Data/noncoding_RNA_expression_list_240731.rds')
 
-bulk_integrated_aggregate_threshold_2 <- read.table('Data/Integrated_thresholded/Integrated_bsn12_cpm_threshold_2_063025.csv',
+bulk_integrated_aggregate_threshold_2 <- read.table('Data_out/Integrated_thresholded/Integrated_bsn12_cpm_threshold_2_070625.csv',
                                                     sep = ',')
 
 

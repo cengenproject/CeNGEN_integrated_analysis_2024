@@ -61,7 +61,7 @@ library(stringr)
 ### load in bulk data ----
 
 
-bulk_subtracted_TMM <- read.table('Data/bsn12_bulk_subtracted_TMM_070425.tsv', sep = '\t')
+bulk_subtracted_TMM <- read.table('Data/bsn12_bulk_subtracted_TMM_070625.tsv.gz', sep = '\t')
 
 
 aggr_subtracted_TMM <- bulk_subtracted_TMM

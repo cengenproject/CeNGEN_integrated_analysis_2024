@@ -146,7 +146,7 @@ neuronal_gt <- read.table('references/bulk_all_ground_truth_121023.csv', sep = '
 neuronal_gt$VD_DD <- neuronal_gt$VD
 
 bulk_raw_TMM <- read.table('Data/bsn12_bulk_TMM_051624.tsv.gz', sep = '\t')
-bulk_subtracted_TMM <- read.table('Data/bsn12_bulk_subtracted_TMM_070625.tsv', sep = '\t')
+bulk_subtracted_TMM <- read.table('Data/bsn12_bulk_subtracted_TMM_070625.tsv.gz', sep = '\t')
 bulk_integrated_aggregate <- read.table('Data/bsn12_subtracted_integrated_propadjust_070625.tsv')
 
 sc_TPM <- read.table('Data/CeNGEN_TPM_080421.tsv.gz')
@@ -261,7 +261,7 @@ bind_rows(diags_aggr_raw_ave_plot,
   theme(axis.text = element_text(color = 'black', face = 'bold'), 
         axis.title = element_text(color = 'black', face = 'bold'),
         title = element_text(color = 'black', face = 'bold'))
-ggsave('figures/Figure 5 Integrated analysis/B_Integrated_Neuronal_Testing_ROC_curves_070625.pdf', width = 9, height = 7)
+ggsave('figures/Figure 4 Integrated analysis/B_Integrated_Neuronal_Testing_ROC_curves_070625.pdf', width = 9, height = 7)
 
 
 bind_rows(diags_aggr_raw_ave_plot,
@@ -299,10 +299,10 @@ integrated_spline(x = 0.104)
 integrated_spline(x = 0.084)
 
 
-threshold_1_19.7p <- 0.1566259
-threshold_2_14p <- 0.2840369
-threshold_3_10.4p <- 0.4415083
-threshold_4_8.4p <- 0.5716838
+threshold_1_19.7p <- 0.1587915
+threshold_2_14p <- 0.2824111
+threshold_3_10.4p <- 0.4517556
+threshold_4_8.4p <- 0.5805705
 
 
 bulk_integrated_aggregate_threshold_1 <- bulk_integrated_aggregate
@@ -434,7 +434,7 @@ ggplot(ROC_df) +
     axis.text.y = element_text(color = 'black', face = 'bold'), 
     axis.title = element_text(color = 'black', face = 'bold'),
     title = element_text(color = 'black', face = 'bold'))
-ggsave('figures/Figure 4 Integrated analysis/C_Integrated_Neuronal_Testing_ROC_barchart_063025.pdf', width = 7, height = 7)
+ggsave('figures/Figure 4 Integrated analysis/C_Integrated_Neuronal_Testing_ROC_barchart_070625.pdf', width = 7, height = 7)
 
 
 
@@ -443,7 +443,6 @@ ggsave('figures/Figure 4 Integrated analysis/C_Integrated_Neuronal_Testing_ROC_b
 
 system.time(unaltered_bulk_.05FDR_boot <- bootstrap_sensitivity(1000, aggr_raw_TMM_plot, testing_gt, 4))
 
-sapply(unaltered_bulk_.05FDR_boot, function(x){x$TPR}) |> summary()
 
 subtracted_bulk_.05FDR_boot <- bootstrap_sensitivity(1000, aggr_sub_TMM_plot, testing_gt, 4)
 
