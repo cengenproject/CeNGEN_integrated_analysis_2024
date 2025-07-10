@@ -5,8 +5,6 @@ library(ggbeeswarm)
 library(dplyr)
 
 
-
-
 #### load gene reference tables ----
 
 GPCR_genes.df <- read.table('references/GPCR_Gene_table.csv', sep = ',', header = 1)
@@ -22,7 +20,7 @@ modality <- read.table('references/Neuron_annotation_070921.csv', sep = ',', hea
 
 ncRNA_expr_list <- readRDS('Data/noncoding_RNA_expression_list_240731.rds')
 
-bulk_integrated_aggregate_threshold_2 <- read.table('Data/Integrated_thresholded/240721_Integrated_bsn12_cpm_threshold_2.csv',
+bulk_integrated_aggregate_threshold_2 <- read.table('Data/Integrated_thresholded/Integrated_bsn12_cpm_threshold_2_063025.csv',
                                                     sep = ',')
 
 
@@ -84,7 +82,7 @@ ggplot(data = GPCR_med_df, aes(x = modality, y = GPCR_total, color = modality)) 
         axis.text = element_text(face = 'bold', color = 'black'),
         plot.title = element_text(hjust = 0.5, face = 'bold'))  
 
-ggsave('figures/GPCR_Protein_per_cell_240730.pdf', height = 8, width = 8)
+ggsave('figures/GPCR_Protein_per_cell_250630.pdf', height = 8, width = 8)
 
 
 

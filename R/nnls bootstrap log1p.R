@@ -7,7 +7,7 @@ library(ComplexHeatmap)
 library(nnls)
 
 ### seurat object downloaded from CeNGEN website downloads page, ~0.5 gb disk space, ~ 2gb RAM to open
-sc_object <- readRDS('~/Bioinformatics/single_cell_data/100720_L4_all_cells_Seurat.rds')
+sc_object <- readRDS('~/Bioinformatics/single_cell_data/100720_L4_all_cells_Seurat.rds') ### replace this line with your own path to the rds object
 
 sc_object_counts <- sc_object@assays$RNA@counts
 sc_object_meta <- sc_object@meta.data

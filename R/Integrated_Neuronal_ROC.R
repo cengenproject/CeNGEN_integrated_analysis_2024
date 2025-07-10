@@ -1,3 +1,7 @@
+### written 20240612 Alec Barrett
+### updated 20240812 Alec Barrett
+### updated again 20250706 Alec Barrett
+
 ### libraries
 
 library(dplyr)
@@ -7,32 +11,134 @@ library(bayestestR)
 library(pROC)
 library(stringr)
 library(patchwork)
-
-
+library(pbapply)
+library(pbmcapply)
 
 ### define functions ----
-get_tpr <- function(expression, truth, threshold, na.rm = TRUE){
-  # True Positive Rate, aka sensitivity, aka recall
-  # TPR = TP/(TP+FN) = TP/P
-  bin <- expression >= threshold
-  return(sum(bin * truth)/sum(truth))
-}
-get_fpr <- function(expression, truth, threshold, na.rm = TRUE){
-  # False Positive Rate
-  # FPR = FP/(FP+TN) = FP/N
-  bin <- expression >= threshold
-  return(sum(bin * (!truth))/sum(!(truth)))
-}
-get_fdr <- function(expression, truth, threshold, na.rm = TRUE){
-  # False Discovery Rate
-  # FDR = FP/(FP+TP) = 1 - PPV
-  bin <- expression >= threshold
-  fdr <- sum(bin * (!truth))/(sum(bin*(!truth)) + sum(bin*truth))
-  if(is.nan(fdr))
-    fdr <- 0
-  return(fdr)
+get_gt_metrics <- function(expression, ground_truth){
+  
+  
+  expression <- expression |> as.matrix()
+  expression_flat <- expression |> as.vector()
+  ranker <- expression |> rank(ties.method = 'min') 
+  orderer <- ranker |> order()
+  helper <- ranker[orderer]
+  thresholds <- unique(helper) |> as.numeric()
+  
+  
+  ground_truth_ordered <- ground_truth |> as.matrix() |> as.vector()
+  ground_truth_ordered <- ground_truth_ordered[orderer]
+  
+  t <- length(ground_truth_ordered)
+  p <- sum(ground_truth_ordered)
+  n <- t-p
+  
+  metrics <- sapply(thresholds, function(x){
+    
+    pos <- which(helper >= x)
+    to <- length(pos)
+    v <- ground_truth_ordered[pos]
+    tp  <- sum(v)
+    fp <- to - tp
+    
+    tpr <- tp/p
+    fpr <- fp/n
+    fdr <- fp/(tp+fp)
+    
+    return(c('TPR' = tpr,
+             'FPR' = fpr,
+             'FDR' = fdr))
+  }) |> 
+    t() |>
+    as.data.frame()
+  
+  
+  metrics$threshold <- expression_flat[orderer][thresholds]
+  metrics
 }
 
+bootstrap_sensitivity <- function(n_boot, expr, gt, ncore) {
+  
+  pbmclapply(seq(1:n_boot), function(x){
+    
+    # Sample indices to maintain pairing between expr and gt
+    set.seed(x)
+    n_total <- length(gt |> as.matrix() |> as.vector())
+    sample_indices <- sample(1:n_total, replace = T)
+    
+    gt_sample <- gt |> as.matrix() |> as.vector()
+    gt_sample <- gt_sample[sample_indices]
+    expr_sample <- expr |> as.matrix() |> as.vector() 
+    expr_sample <- expr_sample[sample_indices]
+    
+    expression_flat <- expr_sample |> as.vector()
+    ranker <- expression_flat |> rank(ties.method = 'min') 
+    orderer <- ranker |> order()
+    helper <- ranker[orderer]
+    thresholds <- unique(helper) |> as.numeric()
+    ground_truth_ordered <- gt_sample 
+    ground_truth_ordered <- ground_truth_ordered[orderer]
+    
+    t <- length(ground_truth_ordered)
+    p <- sum(ground_truth_ordered)
+    n <- t-p
+    
+    diag <- sapply(thresholds, function(thresh){
+      
+      pos <- which(helper >= thresh)
+      to <- length(pos)
+      v <- ground_truth_ordered[pos]
+      tp  <- sum(v)
+      fp <- to - tp
+      
+      tpr <- tp/p
+      fdr <- fp/(tp+fp)
+      
+      return(c('TPR' = tpr,
+               'FDR' = fdr))
+    }) |> 
+      t() |>
+      as.data.frame()
+    
+    diag <- rbind(diag, data.frame(TPR = 0, FDR = 0))
+    
+    if(0.05 %in% diag$FDR){
+      returner <- diag[diag$FDR == 0.05,]
+      returner <- returner[returner$TPR == max(returner$TPR),]
+      if(sum(returner$TPR == max(returner$TPR)) > 1){
+        returner <- returner[1,]
+      }
+      returner$predicted = 'no'
+      
+    }else{
+      
+      # Find closest points above and below 0.05
+      above_05 <- diag[diag$FDR > 0.05,]
+      below_05 <- diag[diag$FDR < 0.05,]
+      
+      if(nrow(above_05) == 0){
+        # All FDR values are below 0.05, use the highest FDR
+        returner <- diag[diag$FDR == max(diag$FDR),]
+        returner$predicted = 'extrapolated'
+      } else if(nrow(below_05) == 0){
+        # All FDR values are above 0.05, use the lowest FDR  
+        returner <- diag[diag$FDR == min(diag$FDR),]
+        returner$predicted = 'extrapolated'
+      } else {
+        # Normal interpolation case
+        point_above <- above_05[above_05$FDR == min(above_05$FDR),][1,]
+        point_below <- below_05[below_05$FDR == max(below_05$FDR),][1,]
+        
+        interp_points <- rbind(point_above, point_below)
+        TPR = approx(interp_points$FDR, interp_points$TPR, xout = 0.05)$y
+        
+        returner <- data.frame(TPR = TPR, FDR = 0.05, predicted = 'yes')
+      }
+    }
+    return(returner)
+    
+  }, mc.cores = ncore)
+}
 #### load data
 
 
@@ -40,10 +146,8 @@ neuronal_gt <- read.table('references/bulk_all_ground_truth_121023.csv', sep = '
 neuronal_gt$VD_DD <- neuronal_gt$VD
 
 bulk_raw_TMM <- read.table('Data/bsn12_bulk_TMM_051624.tsv.gz', sep = '\t')
-bulk_subtracted_TMM <- read.table('Data/bsn12_bulk_subtracted_TMM_051624.tsv.gz', sep = '\t')
-bulk_integrated_aggregate <- read.table('Data/bsn12_subtracted_integrated_propadjust_071724.tsv.gz')
-
-
+bulk_subtracted_TMM <- read.table('Data/bsn12_bulk_subtracted_TMM_070625.tsv', sep = '\t')
+bulk_integrated_aggregate <- read.table('Data/bsn12_subtracted_integrated_propadjust_070625.tsv')
 
 sc_TPM <- read.table('Data/CeNGEN_TPM_080421.tsv.gz')
 sc_TPM$VD_DD <- sc_TPM$VD
@@ -86,7 +190,6 @@ aggr_raw_TMM <- aggr_raw_TMM[,order(colnames(aggr_raw_TMM))]
 aggr_raw_TMM <- data.frame(vapply(unique(colnames(aggr_raw_TMM)), function(x)
   rowMeans(aggr_raw_TMM[,colnames(aggr_raw_TMM)== x,drop=FALSE], na.rm=TRUE),
   numeric(nrow(aggr_raw_TMM)) ))
-dim(aggr_raw_TMM)
 
 
 aggr_subtracted_TMM <- bulk_subtracted_TMM
@@ -98,14 +201,11 @@ aggr_subtracted_TMM <- data.frame(vapply(unique(colnames(aggr_subtracted_TMM)), 
   numeric(nrow(aggr_subtracted_TMM)) ))
 
 
-
-
 ## only consider common neurons
-
 neurons <- intersect(colnames(aggr_subtracted_TMM), colnames(neuronal_gt))
 neurons <- intersect(colnames(bulk_integrated_aggregate), neurons)
 
-
+## only consider common genes
 neuronal_gt_genes <- intersect(rownames(aggr_subtracted_TMM), rownames(neuronal_gt))
 nrow(neuronal_gt)
 sum(rownames(neuronal_gt) %in% rownames(aggr_raw_TMM))
@@ -118,47 +218,29 @@ proportions_plot <- prop_by_type[neuronal_gt_genes, neurons]
 adjusted_proportions_plot <- prop_by_type_adjusted[neuronal_gt_genes, neurons]
 bulk_integrated_aggregate_plot <- bulk_integrated_aggregate[neuronal_gt_genes, neurons]
 
-
+## subset down for ground truth matrix
 testing_gt <- neuronal_gt[neuronal_gt_genes, neurons]
 
 
-## calculate Metrics across thresholds
+## calculate Metrics across a wide range of thresholds
 
-diags_aggr_raw_ave_plot <- tibble(threshold = c(0,2**seq(-17,12,0.05)),
-                                  TPR = map_dbl(threshold, ~get_tpr(aggr_raw_TMM_plot, testing_gt, .x)),
-                                  FPR = map_dbl(threshold, ~get_fpr(aggr_raw_TMM_plot, testing_gt, .x)),
-                                  FDR = map_dbl(threshold, ~get_fdr(aggr_raw_TMM_plot, testing_gt, .x)),
+diags_aggr_raw_ave_plot <- tibble(get_gt_metrics(aggr_raw_TMM_plot, testing_gt),
                                   counts = "unaltered bulk")
 
 
-diags_aggr_sub_TMM_plot <- tibble(threshold = c(0,2**seq(-17,12,0.05)),
-                                  TPR = map_dbl(threshold, ~get_tpr(aggr_sub_TMM_plot, testing_gt, .x)),
-                                  FPR = map_dbl(threshold, ~get_fpr(aggr_sub_TMM_plot, testing_gt, .x)),
-                                  FDR = map_dbl(threshold, ~get_fdr(aggr_sub_TMM_plot, testing_gt, .x)),
+diags_aggr_sub_TMM_plot <- tibble(get_gt_metrics(aggr_sub_TMM_plot, testing_gt),
                                   counts = "subtracted bulk")
 
-diags_aggr_int_cpm_plot <- tibble(threshold = c(0,2**seq(-17,15,0.05)),
-                                  TPR = map_dbl(threshold, ~get_tpr(bulk_integrated_aggregate_plot, testing_gt, .x)),
-                                  FPR = map_dbl(threshold, ~get_fpr(bulk_integrated_aggregate_plot, testing_gt, .x)),
-                                  FDR = map_dbl(threshold, ~get_fdr(bulk_integrated_aggregate_plot, testing_gt, .x)),
+diags_aggr_int_cpm_plot <- tibble(get_gt_metrics(bulk_integrated_aggregate_plot, testing_gt),
                                   counts = "integrated")
 
-diags_proportions_plot <- tibble(threshold = c(0,2**seq(-17,12,0.05)),
-                                 TPR = map_dbl(threshold, ~get_tpr(proportions_plot, testing_gt, .x)),
-                                 FPR = map_dbl(threshold, ~get_fpr(proportions_plot, testing_gt, .x)),
-                                 FDR = map_dbl(threshold, ~get_fdr(proportions_plot, testing_gt, .x)),
+diags_proportions_plot <- tibble(get_gt_metrics(proportions_plot, testing_gt),
                                  counts = "sc proportions")
 
-diags_sc_TPM_plot <- tibble(threshold = c(0,2**seq(-17,12,0.05)),
-                            TPR = map_dbl(threshold, ~get_tpr(sc_TPM_plot, testing_gt, .x)),
-                            FPR = map_dbl(threshold, ~get_fpr(sc_TPM_plot, testing_gt, .x)),
-                            FDR = map_dbl(threshold, ~get_fdr(sc_TPM_plot, testing_gt, .x)),
+diags_sc_TPM_plot <- tibble(get_gt_metrics(sc_TPM_plot, testing_gt),
                             counts = "sc TPM")
 
-diags_adjusted_proportions_plot <- tibble(threshold = c(0,2**seq(-17,12,0.05)),
-                                          TPR = map_dbl(threshold, ~get_tpr(adjusted_proportions_plot, testing_gt, .x)),
-                                          FPR = map_dbl(threshold, ~get_fpr(adjusted_proportions_plot, testing_gt, .x)),
-                                          FDR = map_dbl(threshold, ~get_fdr(adjusted_proportions_plot, testing_gt, .x)),
+diags_adjusted_proportions_plot <- tibble(get_gt_metrics(adjusted_proportions_plot, testing_gt),
                                           counts = "sc adjusted proportions")
 
 
@@ -179,7 +261,7 @@ bind_rows(diags_aggr_raw_ave_plot,
   theme(axis.text = element_text(color = 'black', face = 'bold'), 
         axis.title = element_text(color = 'black', face = 'bold'),
         title = element_text(color = 'black', face = 'bold'))
-ggsave('figures/Figure 5 Integrated analysis/B_Integrated_Neuronal_Testing_ROC_curves_061224.pdf', width = 9, height = 7)
+ggsave('figures/Figure 5 Integrated analysis/B_Integrated_Neuronal_Testing_ROC_curves_070625.pdf', width = 9, height = 7)
 
 
 bind_rows(diags_aggr_raw_ave_plot,
@@ -200,19 +282,27 @@ bind_rows(diags_aggr_raw_ave_plot,
   theme(axis.text = element_text(color = 'black', face = 'bold'), 
         axis.title = element_text(color = 'black', face = 'bold'),
         title = element_text(color = 'black', face = 'bold'))
-ggsave('figures/Figure 5 Integrated analysis/B_Integrated_Neuronal_Testing_PR_curves_061224.pdf', width = 9, height = 7)
+ggsave('figures/Figure 5 Integrated analysis/B_Integrated_Neuronal_Testing_PR_curves_070625.pdf', width = 9, height = 7)
 
 
 
 ### threshold integrated data ----
 
-threshold_1_19.7p <- 0.12879
-threshold_2_14p <- 0.23774
-threshold_3_10.4p <- 0.38021
-threshold_4_8.4p <- 0.53458
+##
+integrated_spline <- splinefun(diags_aggr_int_cpm_plot$FDR,
+                               diags_aggr_int_cpm_plot$threshold,
+                               method = 'natural')
+
+integrated_spline(x = 0.197)
+integrated_spline(x = 0.14)
+integrated_spline(x = 0.104)
+integrated_spline(x = 0.084)
 
 
-diags_aggr_int_cpm_plot
+threshold_1_19.7p <- 0.1566259
+threshold_2_14p <- 0.2840369
+threshold_3_10.4p <- 0.4415083
+threshold_4_8.4p <- 0.5716838
 
 
 bulk_integrated_aggregate_threshold_1 <- bulk_integrated_aggregate
@@ -226,19 +316,19 @@ bulk_integrated_aggregate_threshold_3[bulk_integrated_aggregate_threshold_3 < th
 bulk_integrated_aggregate_threshold_4[bulk_integrated_aggregate_threshold_4 < threshold_4_8.4p] = 0
 
 
-write.table(bulk_integrated_aggregate, 'Data_out/Integrated_thresholded/Integrated_bsn12_cpm_unthresholded.csv', 
+write.table(bulk_integrated_aggregate, 'Data_out/Integrated_thresholded/Integrated_bsn12_cpm_unthresholded_070625.csv', 
             sep = ',',
             quote = F)
-write.table(bulk_integrated_aggregate_threshold_1, 'Data_out/Integrated_thresholded/Integrated_bsn12_cpm_threshold_1.csv', 
+write.table(bulk_integrated_aggregate_threshold_1, 'Data_out/Integrated_thresholded/Integrated_bsn12_cpm_threshold_1_070625.csv', 
             sep = ',',
             quote = F)
-write.table(bulk_integrated_aggregate_threshold_2, 'Data_out/Integrated_thresholded/Integrated_bsn12_cpm_threshold_2.csv', 
+write.table(bulk_integrated_aggregate_threshold_2, 'Data_out/Integrated_thresholded/Integrated_bsn12_cpm_threshold_2_070625.csv', 
             sep = ',',
             quote = F)
-write.table(bulk_integrated_aggregate_threshold_3, 'Data_out/Integrated_thresholded/Integrated_bsn12_cpm_threshold_3.csv', 
+write.table(bulk_integrated_aggregate_threshold_3, 'Data_out/Integrated_thresholded/Integrated_bsn12_cpm_threshold_3_070625.csv', 
             sep = ',',
             quote = F)
-write.table(bulk_integrated_aggregate_threshold_4, 'Data_out/Integrated_thresholded/Integrated_bsn12_cpm_threshold_4.csv', 
+write.table(bulk_integrated_aggregate_threshold_4, 'Data_out/Integrated_thresholded/Integrated_bsn12_cpm_threshold_4_070625.csv', 
             sep = ',',
             quote = F)
 
@@ -285,29 +375,39 @@ roc.test(adjusted_prop_roc, int_roc)
 
 
 prop_tpm_delong <- roc.test(prop_roc, sc_TPM_roc)
-prop_tpm_delong$p.value * 12
+prop_tpm_delong$p.value * 10
 
 roc_list_prop <- list('sc TPM' = sc_TPM_roc, 'sc proportions' = prop_roc)
 
 
 
-sapply(roc_list_prop, function(y){
+single_cell_roc_df <- sapply(roc_list_prop, function(y){
   x <- ci.auc(y)
   return(c('lower_ci' = x[1], 'mean' = x[2], 'upper_ci' = x[3]))
 }) |> t() |> data.frame() |> tibble::rownames_to_column('dataset') |>
-  mutate(dataset = dataset |> factor(levels = c('sc TPM', 'sc proportions'))) |>
-  ggplot() + 
+  mutate(dataset = dataset |> factor(levels = c('sc TPM', 'sc proportions')))
+
+ggplot(single_cell_roc_df) + 
   geom_col(aes(x = dataset, y = mean, fill = dataset), alpha = 0.8) + 
   geom_errorbar(aes(x = dataset, ymin = lower_ci, ymax = upper_ci), width = 0.2) +
   #coord_cartesian(ylim = c(0.5,1)) +
+  annotate("segment",
+           x = 1,
+           xend = 2,
+           y = max(single_cell_roc_df$upper_ci) + 0.03,
+           yend = max(single_cell_roc_df$upper_ci) + 0.03) +
+  annotate("text", x = 1.5, y = max(single_cell_roc_df$upper_ci) + 0.05, 
+           label = '*', 
+           fontface = 'bold', size = 10) +
   geom_text(aes(x = dataset, y = mean+0.02, label = mean |> round(4)), fontface = 'bold') +
+  ylab('AUROC') +
   theme_classic(base_size = 20) +
   theme(
     axis.text.x = element_blank(),
     axis.text.y = element_text(color = 'black', face = 'bold'), 
     axis.title = element_text(color = 'black', face = 'bold'),
     title = element_text(color = 'black', face = 'bold'))
-ggsave('figures/Figure 4 Integrated analysis/C_Integrated_Neuronal_Testing_ROC_barchart_061224.pdf', width = 7, height = 7)
+ggsave('figures/Figure 4 Integrated analysis/C_Integrated_Neuronal_Testing_ROC_barchart_070625.pdf', width = 7, height = 7)
 
 
 
@@ -316,12 +416,14 @@ roc_list <- list('unaltered bulk' = raw_roc, 'subtracted bulk' = sub_roc, 'sc ad
 
 
 
-sapply(roc_list, function(y){
+ROC_df <- sapply(roc_list, function(y){
   x <- ci.auc(y)
   return(c('lower_ci' = x[1], 'mean' = x[2], 'upper_ci' = x[3]))
 }) |> t() |> data.frame() |> tibble::rownames_to_column('dataset') |>
-  mutate(dataset = dataset |> factor(levels = c('unaltered bulk', 'subtracted bulk', 'sc adjusted proportions', 'integrated'))) |>
-  ggplot() + 
+  mutate(dataset = dataset |> factor(levels = c('unaltered bulk', 'subtracted bulk', 'sc adjusted proportions', 'integrated')))
+
+
+ggplot(ROC_df) + 
   geom_col(aes(x = dataset, y = mean, fill = dataset), alpha = 0.8) + 
   geom_errorbar(aes(x = dataset, ymin = lower_ci, ymax = upper_ci), width = 0.2) +
   #coord_cartesian(ylim = c(0.5,1)) +
@@ -332,211 +434,33 @@ sapply(roc_list, function(y){
     axis.text.y = element_text(color = 'black', face = 'bold'), 
     axis.title = element_text(color = 'black', face = 'bold'),
     title = element_text(color = 'black', face = 'bold'))
-ggsave('figures/Figure 4 Integrated analysis/C_Integrated_Neuronal_Testing_ROC_barchart_061224.pdf', width = 7, height = 7)
+ggsave('figures/Figure 4 Integrated analysis/C_Integrated_Neuronal_Testing_ROC_barchart_063025.pdf', width = 7, height = 7)
 
 
 
 ## calculate the sensitivity of each dataset at 5% FDR, using bootstrap approach
 
-unaltered_bulk_.05FDR_boot <- pblapply(seq(1:1000), function(x){
-  
-  
-  ## sample with replacement
-  set.seed(x)
-  gt <- testing_gt |> unlist() |> sample(replace = T)
-  
-  set.seed(x)
-  bin <- aggr_raw_TMM_plot |> unlist() |> sample(replace = T) |> log1p()
-  
-  
-  ## caculate TPR/FDR across thresholds
-  diag <- tibble(threshold = seq(5,10 ,0.001),
-                 TPR = map_dbl(threshold, ~get_tpr(bin, gt, .x)),
-                 FDR = map_dbl(threshold, ~get_fdr(bin, gt, .x))) |> data.frame()
-  #diag <- unique(diag[,c('TPR', 'FDR')])
-  
-  
-  ## if the dataset can hit exactly 5% FDR, then use that value, but if not, make a linear model between the two surrounding points only, and interpolate the TPR at 5% FDR
-  if(0.05 %in% diag$FDR){
-    returner <- diag[diag$FDR == 0.05,]
-    returner <- returner[returner$TPR == max(returner$TPR),]
-    if(sum(returner$TPR == max(returner$TPR)) > 1){
-      returner <- returner[1,]
-    }
-    returner$predicted = 'no'
-    
-  }else{
-    
-    diag$distance <- 0.05-diag$FDR
-    
-    diag_above <- diag[diag$distance < 0,]
-    diag_above <- diag_above[diag_above$distance == max(diag_above$distance),]
-    diag_below <- diag[diag$distance > 0,]
-    if(sum(diag$distance > 0)==0){
-      diag_below <- data.frame(threshold = Inf, TPR = 0, FDR = 0, distance = 0.05)
-    }
-    else{diag_below <- diag_below[diag_below$distance == min(diag_below$distance),]}
-    diag <- rbind(diag_above, diag_below)
-    
-    FDR = 0.05
-    TPR = predict(lm(TPR ~ FDR, diag), list('FDR' = 0.05)) [[1]]
-    
-    returner <- data.frame(threshold = mean(diag$threshold), TPR = TPR, FDR = FDR, predicted = 'yes')
-    
-  }
-  return(returner)
-  
-})
 
-integrated_.05FDR_boot <- pblapply(seq(1:1000), function(x){
-  
-  set.seed(x)
-  gt <- testing_gt |> unlist() |> sample(replace = T)
-  
-  set.seed(x)
-  bin <- bulk_integrated_aggregate_plot |> unlist() |> sample(replace = T) |> log1p()
-  
-  diag <- tibble(threshold = seq(0,2 ,0.001),
-                 TPR = map_dbl(threshold, ~get_tpr(bin, gt, .x)),
-                 FDR = map_dbl(threshold, ~get_fdr(bin, gt, .x))) |> data.frame()
-  #diag <- unique(diag[,c('TPR', 'FDR')])
-  
-  
-  ## if the dataset can hit exactly 5% FDR, then use that value, but if not, make a linear model between the two surrounding points only, and interpolate the TPR at 5% FDR
-  if(0.05 %in% diag$FDR){
-    returner <- diag[diag$FDR == 0.05,]
-    returner <- returner[returner$TPR == max(returner$TPR),]
-    if(sum(returner$TPR == max(returner$TPR)) > 1){
-      returner <- returner[1,]
-    }
-    returner$predicted = 'no'
-    
-  }else{
-    
-    diag$distance <- 0.05-diag$FDR
-    
-    diag_above <- diag[diag$distance < 0,]
-    diag_above <- diag_above[diag_above$distance == max(diag_above$distance),]
-    diag_below <- diag[diag$distance > 0,]
-    if(sum(diag$distance > 0)==0){
-      diag_below <- data.frame(threshold = Inf, TPR = 0, FDR = 0, distance = 0.05)
-    }
-    else{diag_below <- diag_below[diag_below$distance == min(diag_below$distance),]}
-    diag <- rbind(diag_above, diag_below)
-    
-    FDR = 0.05
-    TPR = predict(lm(TPR ~ FDR, diag), list('FDR' = 0.05)) [[1]]
-    
-    returner <- data.frame(threshold = mean(diag$threshold), TPR = TPR, FDR = FDR, predicted = 'yes')
-    
-  }
-  return(returner)
-  
-})
+system.time(unaltered_bulk_.05FDR_boot <- bootstrap_sensitivity(1000, aggr_raw_TMM_plot, testing_gt, 4))
+
+sapply(unaltered_bulk_.05FDR_boot, function(x){x$TPR}) |> summary()
+
+subtracted_bulk_.05FDR_boot <- bootstrap_sensitivity(1000, aggr_sub_TMM_plot, testing_gt, 4)
+
+integrated_.05FDR_boot <- bootstrap_sensitivity(1000, bulk_integrated_aggregate_plot, testing_gt, 4)
+
+adjusted_proportions_.05FDR_boot <- bootstrap_sensitivity(1000, adjusted_proportions_plot, testing_gt, 4)
 
 
-subtracted_bulk_.05FDR_boot <- pblapply(seq(1:1000), function(x){
-  
-  set.seed(x)
-  gt <- testing_gt |> unlist() |> sample(replace = T)
-  
-  set.seed(x)
-  bin <- aggr_sub_TMM_plot |> unlist() |> sample(replace = T) |> log1p()
-  
-  diag <- tibble(threshold = seq(4,6 ,0.001),
-                 TPR = map_dbl(threshold, ~get_tpr(bin, gt, .x)),
-                 FDR = map_dbl(threshold, ~get_fdr(bin, gt, .x))) |> data.frame()
-  #diag <- unique(diag[,c('TPR', 'FDR')])
-  
-  
-  ## if the dataset can hit exactly 5% FDR, then use that value, but if not, make a linear model between the two surrounding points only, and interpolate the TPR at 5% FDR
-  if(0.05 %in% diag$FDR){
-    returner <- diag[diag$FDR == 0.05,]
-    returner <- returner[returner$TPR == max(returner$TPR),]
-    if(sum(returner$TPR == max(returner$TPR)) > 1){
-      returner <- returner[1,]
-    }
-    returner$predicted = 'no'
-    
-  }else{
-    
-    diag$distance <- 0.05-diag$FDR
-    
-    diag_above <- diag[diag$distance < 0,]
-    diag_above <- diag_above[diag_above$distance == max(diag_above$distance),]
-    diag_below <- diag[diag$distance > 0,]
-    if(sum(diag$distance > 0)==0){
-      diag_below <- data.frame(threshold = Inf, TPR = 0, FDR = 0, distance = 0.05)
-    }
-    else{diag_below <- diag_below[diag_below$distance == min(diag_below$distance),]}
-    diag <- rbind(diag_above, diag_below)
-    
-    FDR = 0.05
-    TPR = predict(lm(TPR ~ FDR, diag), list('FDR' = 0.05)) [[1]]
-    
-    returner <- data.frame(threshold = mean(diag$threshold), TPR = TPR, FDR = FDR, predicted = 'yes')
-    
-  }
-  return(returner)
-  
-})
-subtracted_bulk_.05FDR_boot
-
-
-
-
-adjusted_proportions_.05FDR_boot <- pblapply(seq(1:1000), function(x){
-  
-  set.seed(x)
-  gt <- testing_gt |> unlist() |> sample(replace = T)
-  
-  set.seed(x)
-  bin <- adjusted_proportions_plot |> unlist() |> sample(replace = T) 
-  
-  diag <- tibble(threshold = seq(0.1,0.5 ,0.0005),
-                 TPR = map_dbl(threshold, ~get_tpr(bin, gt, .x)),
-                 FDR = map_dbl(threshold, ~get_fdr(bin, gt, .x))) |> data.frame()
-  #diag <- unique(diag[,c('TPR', 'FDR')])
-  
-  
-  
-  ## if the dataset can hit exactly 5% FDR, then use that value, but if not, make a linear model between the two surrounding points only, and interpolate the TPR at 5% FDR
-  if(0.05 %in% diag$FDR){
-    returner <- diag[diag$FDR == 0.05,]
-    returner <- returner[returner$TPR == max(returner$TPR),]
-    if(sum(returner$TPR == max(returner$TPR)) > 1){
-      returner <- returner[1,]
-    }
-    returner$predicted = 'no'
-    
-  }else{
-    
-    diag$distance <- 0.05-diag$FDR
-    
-    diag_above <- diag[diag$distance < 0,]
-    diag_above <- diag_above[diag_above$distance == max(diag_above$distance),]
-    diag_below <- diag[diag$distance > 0,]
-    if(sum(diag$distance > 0)==0){
-      diag_below <- data.frame(threshold = Inf, TPR = 0, FDR = 0, distance = 0.05)
-    }
-    else{diag_below <- diag_below[diag_below$distance == min(diag_below$distance),]}
-    diag <- rbind(diag_above, diag_below)
-    
-    FDR = 0.05
-    TPR = predict(lm(TPR ~ FDR, diag), list('FDR' = 0.05)) [[1]]
-    
-    returner <- data.frame(threshold = mean(diag$threshold), TPR = TPR, FDR = FDR, predicted = 'yes')
-    
-  }
-  return(returner)
-  
-})
 
 rbind(do.call(rbind, adjusted_proportions_.05FDR_boot) |> data.frame() |> mutate(dataset = 'sc adjusted proportions'),
       do.call(rbind, subtracted_bulk_.05FDR_boot) |> data.frame() |> mutate(dataset = 'subtracted bulk'),
       do.call(rbind, unaltered_bulk_.05FDR_boot) |> data.frame() |> mutate(dataset = 'unaltered bulk'),
       do.call(rbind, integrated_.05FDR_boot) |> data.frame() |> mutate(dataset = 'integrated')
-) |> data.frame() |> mutate(dataset = factor(dataset, levels = c('unaltered bulk', 'subtracted bulk', 'sc adjusted proportions', 'integrated'))) |>
+) |> 
+  data.frame() |> 
+  mutate(dataset = factor(dataset, levels = c('unaltered bulk', 'subtracted bulk',
+                                              'sc adjusted proportions', 'integrated'))) |>
   ggplot() +
   geom_boxplot(aes(x = dataset, y = TPR, fill = dataset), notch = T) +
   ggtitle('Sensitivity at 5% FDR') +
@@ -546,7 +470,7 @@ rbind(do.call(rbind, adjusted_proportions_.05FDR_boot) |> data.frame() |> mutate
         axis.text.y = element_text(color = 'black', face = 'bold'), 
         axis.title = element_text(color = 'black', face = 'bold'),
         title = element_text(color = 'black', face = 'bold'))
-ggsave('figures/Figure 5 Integrated analysis/C_Sensitivity_at_5percent_FDR_240614.pdf', width = 7, height = 7)
+ggsave('figures/Figure 5 Integrated analysis/C_Sensitivity_at_5percent_FDR_070625.pdf', width = 7, height = 7)
 
 
 

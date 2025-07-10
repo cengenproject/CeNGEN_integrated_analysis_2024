@@ -11,28 +11,47 @@ library(patchwork)
 
 
 ### define functions ----
-get_tpr <- function(expression, truth, threshold, na.rm = TRUE){
-  # True Positive Rate, aka sensitivity, aka recall
-  # TPR = TP/(TP+FN) = TP/P
-  bin <- expression >= threshold
-  return(sum(bin * truth)/sum(truth))
+get_gt_metrics <- function(expression, ground_truth){
+  
+  
+  expression <- expression |> as.matrix()
+  expression_flat <- expression |> as.vector()
+  ranker <- expression |> rank(ties.method = 'min') 
+  orderer <- ranker |> order()
+  helper <- ranker[orderer]
+  thresholds <- unique(helper) |> as.numeric()
+  
+  
+  ground_truth_ordered <- ground_truth |> as.matrix() |> as.vector()
+  ground_truth_ordered <- ground_truth_ordered[orderer]
+  
+  t <- length(ground_truth_ordered)
+  p <- sum(ground_truth_ordered)
+  n <- t-p
+  
+  metrics <- sapply(thresholds, function(x){
+    
+    pos <- which(helper >= x)
+    to <- length(pos)
+    v <- ground_truth_ordered[pos]
+    tp  <- sum(v)
+    fp <- to - tp
+    
+    tpr <- tp/p
+    fpr <- fp/n
+    fdr <- fp/(tp+fp)
+    
+    return(c('TPR' = tpr,
+             'FPR' = fpr,
+             'FDR' = fdr))
+  }) |> 
+    t() |>
+    as.data.frame()
+  
+  
+  metrics$threshold <- expression_flat[orderer][thresholds]
+  metrics
 }
-get_fpr <- function(expression, truth, threshold, na.rm = TRUE){
-  # False Positive Rate
-  # FPR = FP/(FP+TN) = FP/N
-  bin <- expression >= threshold
-  return(sum(bin * (!truth))/sum(!(truth)))
-}
-get_fdr <- function(expression, truth, threshold, na.rm = TRUE){
-  # False Discovery Rate
-  # FDR = FP/(FP+TP) = 1 - PPV
-  bin <- expression >= threshold
-  fdr <- sum(bin * (!truth))/(sum(bin*(!truth)) + sum(bin*truth))
-  if(is.nan(fdr))
-    fdr <- 0
-  return(fdr)
-}
-
 #### load data
 
 # save(bmind_neuron_count_TMM, egm_TMM, bulk_subtracted_TMM, bulk_raw_TMM, genes, neurons, testing_matrix, 
@@ -47,7 +66,7 @@ testing_matrix <-  read.table('references/ubiquitous_nonNeuronal_testing_matrix.
 
 
 bulk_raw_TMM <- read.table('Data/bsn12_bulk_TMM_051624.tsv.gz', sep = '\t')
-bulk_subtracted_TMM <- read.table('Data/bsn12_bulk_subtracted_TMM_051624.tsv.gz', sep = '\t')
+bulk_subtracted_TMM <- read.table('Data/bsn12_bulk_subtracted_TMM_070625.tsv', sep = '\t')
 bmind_neuron_count_TMM <- read.table('Data/bsn12_bulk_bMIND_TMM_051624.tsv.gz', sep = '\t')
 egm_TMM <- read.table('Data/bsn12_bulk_enigma_TMM_051624.tsv.gz', sep = '\t')
 
@@ -100,32 +119,24 @@ bmind_ave_plot <- bmind_ave[genes, neurons]
 
 
 
-diags_aggr_raw_ave_plot <- tibble(threshold = c(0,2**seq(-17,12,0.05)),
-                                  TPR = map_dbl(threshold, ~get_tpr(aggr_raw_TMM_plot, testing_gt, .x)),
-                                  FPR = map_dbl(threshold, ~get_fpr(aggr_raw_TMM_plot, testing_gt, .x)),
-                                  FDR = map_dbl(threshold, ~get_fdr(aggr_raw_TMM_plot, testing_gt, .x)),
+
+diags_aggr_raw_ave_plot <- tibble(get_gt_metrics(expression = aggr_raw_TMM_plot, ground_truth = testing_gt),
                                   counts = "raw")
 
 
-diags_aggr_sub_TMM_plot <- tibble(threshold = c(0,2**seq(-17,12,0.05)),
-                                  TPR = map_dbl(threshold, ~get_tpr(aggr_sub_TMM_plot, testing_gt, .x)),
-                                  FPR = map_dbl(threshold, ~get_fpr(aggr_sub_TMM_plot, testing_gt, .x)),
-                                  FDR = map_dbl(threshold, ~get_fdr(aggr_sub_TMM_plot, testing_gt, .x)),
+diags_aggr_sub_TMM_plot <- tibble(get_gt_metrics(expression = aggr_sub_TMM_plot, ground_truth = testing_gt),
                                   counts = "Subtracted Bulk")
 
 
-diags_aggr_enigma_L2_log_plot <- tibble(threshold = c(0,2**seq(-17,12,0.05)),
-                                        TPR = map_dbl(threshold, ~get_tpr(egm_ave_plot, testing_gt, .x)),
-                                        FPR = map_dbl(threshold, ~get_fpr(egm_ave_plot, testing_gt, .x)),
-                                        FDR = map_dbl(threshold, ~get_fdr(egm_ave_plot, testing_gt, .x)),
+diags_aggr_enigma_L2_log_plot <- tibble(get_gt_metrics(expression = egm_ave_plot,
+                                                       ground_truth = testing_gt),
                                         counts = "ENIGMA")
 
 
-diags_aggr_bMIND_ave_plot <- tibble(threshold = c(0,2**seq(-17,12,0.05)),
-                                    TPR = map_dbl(threshold, ~get_tpr(bmind_ave_plot, testing_gt, .x)),
-                                    FPR = map_dbl(threshold, ~get_fpr(bmind_ave_plot, testing_gt, .x)),
-                                    FDR = map_dbl(threshold, ~get_fdr(bmind_ave_plot, testing_gt, .x)),
+diags_aggr_bMIND_ave_plot <- tibble(get_gt_metrics(expression = bmind_ave_plot,
+                                                   ground_truth = testing_gt),
                                     counts = "bMIND")
+
 
 bind_rows(diags_aggr_raw_ave_plot,
           diags_aggr_sub_TMM_plot,
@@ -139,9 +150,10 @@ bind_rows(diags_aggr_raw_ave_plot,
   theme_classic(base_size = 20) +
   theme(axis.text = element_text(color = 'black', face = 'bold'), 
         axis.title = element_text(color = 'black', face = 'bold'),
-        title = element_text(color = 'black', face = 'bold'))
+        title = element_text(color = 'black', face = 'bold'),
+        legend.position = '')
 
-ggsave('figures/UN_Testing_ROC_051524.pdf', width = 7, height = 7)
+ggsave('figures/Figure_2/UN_Testing_ROC_070825.pdf', width = 7, height = 7)
 
 bind_rows(diags_aggr_raw_ave_plot,
           diags_aggr_sub_TMM_plot,
@@ -188,7 +200,7 @@ sapply(roc_list, function(y){
     axis.text.y = element_text(color = 'black', face = 'bold'), 
     axis.title = element_text(color = 'black', face = 'bold'),
     title = element_text(color = 'black', face = 'bold'))
-ggsave('figures/UN_Testing_ROC_barchart_051624.pdf', width = 7, height = 7)
+ggsave('figures/UN_Testing_ROC_barchart_070825.pdf', width = 7, height = 7)
 
 
 
@@ -302,5 +314,5 @@ ggplot(sample_auc_df, aes(x = bulk_sample_auc, y = subtracted_sample_auc, label 
   #labs(x = 'enigma per-sample auc', y = 'subtracted per-sample auc') +
   theme(legend.position = '') +
   plot_layout(ncol = 3)
-ggsave('per sample UN AUC 250528.pdf', width = 8, height = 8)
+ggsave('figures/Figure_2/per sample UN AUC 070825.pdf', width = 8, height = 8)
 

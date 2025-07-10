@@ -4,6 +4,7 @@
 
 library(LittleBites)
 library(pbapply)
+library(edgeR)
 
 ### ground truth ----
 
@@ -24,13 +25,13 @@ UNN_test$VD <- UNN_test$VD_DD
 
 ###
 
-bulk_data <- read.table('Data/Bulk_data_bsn12_231211.tsv', sep = '\t')
+bulk_data <- read.table('Data/Bulk_data_bsn12_231211.tsv.gz', sep = '\t')
 
-sc_object_cut_neuron_aggregates_cpm <- read.table('Data/singleCell_reference.tsv', sep = '\t')
+sc_object_cut_neuron_aggregates_cpm <- read.table('Data/singleCell_reference.tsv.gz', sep = '\t')
 
 cells <- colnames(sc_object_cut_neuron_aggregates_cpm) |> unique() |> sort()
 
-specificity <- pbapply(sc_object_cut_neuron_aggregates_cpm |> log1p(), 1, LittleBites::Spm)
+specificity <- pbapply(sc_object_cut_neuron_aggregates_cpm |> log1p(), 1, LittleBites::max_spm)
 
 colnames(sc_object_cut_neuron_aggregates)
 
@@ -68,28 +69,34 @@ bulk_subtracted <- subtraction(bulk = bulk_data_use,
                                reference = sc_object_cut_neuron_aggregates_cpm_use,
                                cell_types_matrix = cell_types_matrix, 
                                training_matrix = UNN_train, 
-                               specificity_weights = specificity, verbose = T)
-
-write.table(bulk_subtracted, 'Data/bsn12_bulk_subtracted_030424.tsv', sep = '\t')
-
+                               specificity_weights = specificity,
+                               verbose = F)
 
 
+write.table(bulk_subtracted, 'Data/bsn12_bulk_subtracted_070625.tsv', sep = '\t')
+bulk_subtracted_TMM <- DGEList(bulk_subtracted)
+bulk_subtracted_TMM <- calcNormFactors(bulk_subtracted_TMM)
+bulk_subtracted_TMM <- cpm(bulk_subtracted_TMM, normalized.lib.sizes = T)
+write.table(bulk_subtracted_TMM, 'Data/bsn12_bulk_subtracted_TMM_070625.tsv', sep = '\t')
+
+
+samples <- colnames(bulk_subtracted)
 bulk_raw_train_AUROC <- sapply(samples, function(sample_1){
   
   cells_in_use <- cell_types_matrix[sample_1,] |> unlist()
-  
+  sep = 'r'
   cell <- cells_in_use[1]
   contaminant_tissues <- cells_in_use[2:length(cells_in_use)]
   
   bulk_deconv_target <- bulk_data_use[,sample_1] ## some steps required a dataframe
-  names(bulk_deconv_target) <- rownames(bulk)
+  names(bulk_deconv_target) <- rownames(bulk_data_use)
   
   starting_auc <- calc_bulk_auc_one_sample(bulk_deconv_target,
                                            sample_1,
-                                           training_matrix,
-                                           training_genes = rownames(training_matrix),
+                                           UNN_train,
+                                           training_genes = rownames(UNN_train),
                                            
-                                           sep = sep)
+                                           sep = 'r')
   return(starting_auc)
   
   
@@ -103,14 +110,14 @@ bulk_sub_train_AUROC <- sapply(samples, function(sample_1){
   contaminant_tissues <- cells_in_use[2:length(cells_in_use)]
   
   bulk_deconv_target <- bulk_subtracted[,sample_1] ## some steps required a dataframe
-  names(bulk_deconv_target) <- rownames(bulk)
+  names(bulk_deconv_target) <- rownames(bulk_subtracted)
   
   starting_auc <- calc_bulk_auc_one_sample(bulk_deconv_target,
                                            sample_1,
-                                           training_matrix,
-                                           training_genes = rownames(training_matrix),
+                                           UNN_train,
+                                           training_genes = rownames(UNN_train),
                                            
-                                           sep = sep)
+                                           sep = 'r')
   return(starting_auc)
   
   
@@ -130,14 +137,14 @@ bulk_raw_test_AUROC <- sapply(samples, function(sample_1){
   contaminant_tissues <- cells_in_use[2:length(cells_in_use)]
   
   bulk_deconv_target <- bulk_data_use[,sample_1] ## some steps required a dataframe
-  names(bulk_deconv_target) <- rownames(bulk)
+  names(bulk_deconv_target) <- rownames(bulk_data_use)
   
   starting_auc <- calc_bulk_auc_one_sample(bulk_deconv_target,
                                            sample_1,
                                            UNN_test,
                                            training_genes = rownames(UNN_test),
                                            
-                                           sep = sep)
+                                           sep = 'r')
   return(starting_auc)
   
   
@@ -150,14 +157,14 @@ bulk_sub_test_AUROC <- sapply(samples, function(sample_1){
   contaminant_tissues <- cells_in_use[2:length(cells_in_use)]
   
   bulk_deconv_target <- bulk_subtracted[,sample_1] ## some steps required a dataframe
-  names(bulk_deconv_target) <- rownames(bulk)
+  names(bulk_deconv_target) <- rownames(bulk_subtracted)
   
   starting_auc <- calc_bulk_auc_one_sample(bulk_deconv_target,
                                            sample_1,
                                            UNN_test,
                                            training_genes = rownames(UNN_test),
                                            
-                                           sep = sep)
+                                           sep = 'r')
   return(starting_auc)
   
   
@@ -167,6 +174,13 @@ plot(bulk_raw_test_AUROC, bulk_sub_test_AUROC,
      xlab = 'bulk AUROC', ylab = 'subtracted AUROC')
 abline(a=0,b=1,col='red')
 
+pdf('figures/Figure_2/LittleBites_Train_Test_AUROC_improvement.pdf')
+plot(bulk_sub_train_AUROC - bulk_raw_train_AUROC,
+     bulk_sub_test_AUROC - bulk_raw_test_AUROC,
+     #xlim = c(0.72,1), ylim = c(0.72,1),
+     xlab = 'improvement train', ylab = 'improvement test')
+abline(a=0,b=1,col='red')
+dev.off()
 
 
 

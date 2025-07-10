@@ -88,11 +88,6 @@ rownames(aggr_prop2count) <- i2s(rownames(aggr_prop2count), ws289)
 rownames(homeobox_genes) <- i2s(rownames(homeobox_genes), ws289)
 
 
-pheatmap(integrated, cluster_rows = F, cluster_cols = F,
-         color = colorRampPalette(c("white", "orange", "maroon", "navy"))(10),
-         fontsize_row = 5, fontsize_col = 5, cellheight = 5, cellwidth = 5, 
-         breaks = c(0:10))
-
 
 draw_overlay <- function(j, i, x, y, width, height, fill) {
   value <- homeobox_genes[i, j]  # Get the binary value from df_2
@@ -156,12 +151,12 @@ heatmap_height <- cell_size * n_rows
 pdf("prop2count_homeobox_GT_250124.pdf", width = heatmap_width, height = heatmap_height)
 draw(p2c_hm, heatmap_legend_side = "right", annotation_legend_side = "right")
 dev.off()
-pdf("integrated_homeobox_GT_250124.pdf", width = heatmap_width, height = heatmap_height)
+pdf("integrated_homeobox_GT_250708.pdf", width = heatmap_width, height = heatmap_height)
 draw(int_hm, heatmap_legend_side = "right", annotation_legend_side = "right")
 dev.off()
 pdf("bulk_homeobox_GT_250124.pdf", width = heatmap_width, height = heatmap_height)
 draw(bulk_hm, heatmap_legend_side = "right", annotation_legend_side = "right")
 dev.off()
-pdf("subtracted_homeobox_GT_250124.pdf", width = heatmap_width, height = heatmap_height)
+pdf("subtracted_homeobox_GT_250708.pdf", width = heatmap_width, height = heatmap_height)
 draw(sub_hm, heatmap_legend_side = "right", annotation_legend_side = "right")
 dev.off()
