@@ -22,7 +22,7 @@ library(nlstools)
 
 ### load data, normalized ----
 
-integrated_data <- read.table('Data/bsn12_subtracted_integrated_propadjust_063025.tsv.gz')
+integrated_data <- read.table('Data/bsn12_subtracted_integrated_propadjust_070625.tsv.gz')
 
 
 ### load single cell ncell reference
@@ -100,7 +100,7 @@ medium_threshold_detected_melt |> filter(variable != 'integrated_sc_ratio') |>
   theme_minimal(base_size = 15) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
         axis.text = element_text(face = 'bold', color = 'black'))
-ggsave('figures/Dynamic_props_specific_enrichment/Medium_threshold_detected_genes_063025.pdf',
+ggsave('figures/Dynamic_props_specific_enrichment/Medium_threshold_detected_genes_070625.pdf',
        height = 5, width = 12)
 
 

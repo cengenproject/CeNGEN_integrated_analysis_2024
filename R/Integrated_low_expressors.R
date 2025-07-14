@@ -88,7 +88,7 @@ for (col_name in colnames(integrated_data_subset_threshold)) {
   new_genes[[col_name]] <- rows_with_1
 }
 
-
+max_len <- sapply(new_genes, length) |> max()
 
 ### new genes per cell plot
 
@@ -166,6 +166,13 @@ ggplot() +
                            aes(x=sc_size, y = raw_protein_genes, label = cell), max.overlaps = 2) +
   xlab("Single Cell Cluster size") +
   ylab("'new' protein coding genes found in bulk")
+
+
+##
+
+df <- data.frame(non_detected_genes = all_nondetect)
+
+
 
 
 

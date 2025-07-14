@@ -282,7 +282,7 @@ bind_rows(diags_aggr_raw_ave_plot,
   theme(axis.text = element_text(color = 'black', face = 'bold'), 
         axis.title = element_text(color = 'black', face = 'bold'),
         title = element_text(color = 'black', face = 'bold'))
-ggsave('figures/Figure 5 Integrated analysis/B_Integrated_Neuronal_Testing_PR_curves_070625.pdf', width = 9, height = 7)
+ggsave('figures/Figure 5 Integrated analysis/B_Integrated_Neuronal_Testing_PR_curves_071225.pdf', width = 9, height = 7)
 
 
 
@@ -469,7 +469,7 @@ rbind(do.call(rbind, adjusted_proportions_.05FDR_boot) |> data.frame() |> mutate
         axis.text.y = element_text(color = 'black', face = 'bold'), 
         axis.title = element_text(color = 'black', face = 'bold'),
         title = element_text(color = 'black', face = 'bold'))
-ggsave('figures/Figure 5 Integrated analysis/C_Sensitivity_at_5percent_FDR_070625.pdf', width = 7, height = 7)
+ggsave('figures/Figure 5 Integrated analysis/C_Sensitivity_at_5percent_FDR_071225.pdf', width = 7, height = 7)
 
 
 
